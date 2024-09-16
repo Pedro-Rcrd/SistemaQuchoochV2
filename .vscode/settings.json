@@ -1,0 +1,5 @@
+{
+    "appService.preDeployTask": "publish-release",
+    "appService.deploySubpath": "bin\\Release\\net7.0\\publish",
+    "appService.defaultWebAppToDeploy": "/subscriptions/4b5cf721-e93b-4651-9680-6dda8e131f66/resourceGroups/quchoochfichacalificacion/providers/Microsoft.Web/sites/asociacionquchooch"
+}

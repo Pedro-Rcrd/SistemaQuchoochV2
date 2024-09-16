@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.002.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "sistemaQuchooch", "sistemaQuchooch.csproj", "{9AAF0DF6-A55D-4CB4-93D9-896C321D8B99}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FichaCalificacionTest", "..\FichaCalificacionTest\FichaCalificacionTest.csproj", "{60A0534E-0BF7-426D-A688-BEA40713C49C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9AAF0DF6-A55D-4CB4-93D9-896C321D8B99}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9AAF0DF6-A55D-4CB4-93D9-896C321D8B99}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9AAF0DF6-A55D-4CB4-93D9-896C321D8B99}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9AAF0DF6-A55D-4CB4-93D9-896C321D8B99}.Release|Any CPU.Build.0 = Release|Any CPU
+		{60A0534E-0BF7-426D-A688-BEA40713C49C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{60A0534E-0BF7-426D-A688-BEA40713C49C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{60A0534E-0BF7-426D-A688-BEA40713C49C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{60A0534E-0BF7-426D-A688-BEA40713C49C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6AB425FB-721A-4BDD-8AF0-103C354AAE91}
+	EndGlobalSection
+EndGlobal
