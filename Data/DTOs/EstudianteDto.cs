@@ -17,6 +17,7 @@ public partial class EstudianteDto
     public string? Carrera { get; set; }
 
     public string? Establecimiento { get; set; }
+     public string? ModalidadEstudio { get; set; }
 
     public string NombreEstudiante { get; set; } = null!;
 

@@ -43,6 +43,13 @@ public class EstablecimientoController : ControllerBase
         return Ok(resultado);
     }
 
+      [HttpGet("selectall")]
+    public async Task<IEnumerable<Establecimiento>> SelectAll()
+    {
+
+        return await _establecimientoService.SelectAll();
+    }
+
     [HttpGet("{id}")]
     public async Task<ActionResult<Establecimiento>> GetById(int id)
     {
@@ -60,10 +67,15 @@ public class EstablecimientoController : ControllerBase
     [HttpPost("create")]
     public async Task<IActionResult> Create(Establecimiento establecimiento)
     {
+        try{
         var newEstablecimiento = await _establecimientoService.Create(establecimiento);
 
         return Ok(new{status = true, 
                       message = "El establecimiento se creó correctamente"});
+        }catch (Exception ex)
+         {
+            return StatusCode(500, new { status = false, message = "Ocurrió un error al crear el establecimiento", error = ex.Message });
+         }
     }
 
     [HttpPut("update/{id}")]

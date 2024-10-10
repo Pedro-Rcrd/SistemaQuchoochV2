@@ -3,6 +3,7 @@ using sistemaQuchooch.Sevices;
 using sistemaQuchooch.Data.QuchoochModels;
 using Microsoft.AspNetCore.Authorization;
 using System.Diagnostics.CodeAnalysis;
+using sistemaQuchooch.Data.DTOs;
 
 
 
@@ -21,6 +22,7 @@ public class FichaCalificacionController : ControllerBase
     private readonly CarreraService _carreraService;
     private readonly CursoFichaCalificacionService _cursoFichaCalificacionService;
     private readonly FileUploadService _fileUploadService;
+    private readonly ConvertirImagenBase64Service _convertirImagenBase64Service;
 
     //Constructor
     public FichaCalificacionController(FichaCalificacionService fichaCalificacionService,
@@ -29,7 +31,8 @@ public class FichaCalificacionController : ControllerBase
                                         CursoFichaCalificacionService cursoFichaCalificacionService,
                                         EstudianteService estudianteService,
                                         EstablecimientoService establecimientoService,
-                                        CarreraService carreraService
+                                        CarreraService carreraService,
+                                        ConvertirImagenBase64Service convertirImagenBase64Service
                                         )
     {
         _fichaCalificacionService = fichaCalificacionService;
@@ -39,6 +42,7 @@ public class FichaCalificacionController : ControllerBase
         _estudianteService = estudianteService;
         _establecimientoService = establecimientoService;
         _carreraService = carreraService;
+        _convertirImagenBase64Service = convertirImagenBase64Service;
     }
 
     //Metodo para obtener la lista de fichaCalificaciones
@@ -66,8 +70,8 @@ public class FichaCalificacionController : ControllerBase
     }
 
     //Lista completa de fichas de calificaciones
-      [HttpGet("selectAll")]
-         public async Task<IEnumerable<FichaCalificacionOutDto>> SelectAll()
+    [HttpGet("selectAll")]
+    public async Task<IEnumerable<FichaCalificacionOutDto>> SelectAll()
     {
         var fichas = await _fichaCalificacionService.SelectAll();
         return fichas;
@@ -87,6 +91,120 @@ public class FichaCalificacionController : ControllerBase
 
         return Ok(fichaCalificacion);
     }
+
+    [HttpGet("InformacionNuevoBloqueFicha/{codigoFichaCalificacion}")]
+    //Información para visualizar datos
+    public async Task<ActionResult<InformacionNuevoBloqueFichaDto>> InformacionNuevoBloqueFicha(int codigoFichaCalificacion)
+    {
+        var informacionfichaCalificacion = await _fichaCalificacionService.InformacionFichaCalificacion(codigoFichaCalificacion);
+
+        var listaBloquesYcursos = await _fichaCalificacionService.ObtenerBloquesYCursos(codigoFichaCalificacion);
+        informacionfichaCalificacion.Bloques = listaBloquesYcursos.Bloques;
+
+        if (informacionfichaCalificacion is null)
+        {
+            //Es un método para mostrar error explicito
+            return FichaCalificacionNotFound(codigoFichaCalificacion);
+        }
+
+
+        return informacionfichaCalificacion;
+    }
+
+    [HttpGet("InformacionActualizarFicha/{codigoFichaCalificacion}")]
+    //Información para visualizar datos
+    public async Task<ActionResult<InformacionActualizarFichaDto>> InformacionActualizarFicha(int codigoFichaCalificacion)
+    {
+        var informacionfichaCalificacion = await _fichaCalificacionService.InformacionActualizarFichaCalificacion(codigoFichaCalificacion);
+
+        var listaBloquesYcursos = await _fichaCalificacionService.ObtenerBloquesYCursosActualizarFicha(codigoFichaCalificacion);
+        informacionfichaCalificacion.Bloques = listaBloquesYcursos.Bloques;
+
+        if (informacionfichaCalificacion is null)
+        {
+            //Es un método para mostrar error explicito
+            return FichaCalificacionNotFound(codigoFichaCalificacion);
+        }
+
+
+        return informacionfichaCalificacion;
+    }
+
+    //Actualizar nota
+
+    [HttpGet("ObtenerCursos/{codigoFichaCalificacion}")]
+    //Información para visualizar datos
+    public async Task<ActionResult<IEnumerable<Curso>>> ObtenerCursosPorNivelAcademico(int codigoFichaCalificacion)
+    {
+        var listadoCursos = await _fichaCalificacionService.ObtenerCursosPorNivelAcademico(codigoFichaCalificacion);
+
+        if (listadoCursos is null)
+        {
+            //Es un método para mostrar error explicito
+            return NotFound(new { status = false, message = "No se encontraron los cursos con el nivel académico indicado." });
+        }
+        return Ok(listadoCursos);
+    }
+
+    [HttpGet("ObtenerCursosPorFicha/{codigoFichaCalificacion}")]
+    //Información para visualizar datos
+    public async Task<ActionResult<IEnumerable<Curso>>> ObtenerCursosPorFicha(int codigoFichaCalificacion)
+    {
+        var listadoCursos = await _fichaCalificacionService.ObtenerCursosPorFicha(codigoFichaCalificacion);
+
+        if (listadoCursos is null)
+        {
+            //Es un método para mostrar error explicito
+            return NotFound(new { status = false, message = "No se encontraron los cursos seleccionados." });
+        }
+        return Ok(listadoCursos);
+    }
+
+    [HttpGet("ObtenerImagenesFicha/{codigoFichaCalificacion}")]
+    //Información para visualizar datos
+    public async Task<ActionResult<IEnumerable<ImagenesFichaDto>>> ObtenerImagenesFicha(int codigoFichaCalificacion)
+    {
+        var imagenesPorBloqueFicha = await _fichaCalificacionService.ObtenerImagenesFicha(codigoFichaCalificacion);
+
+        if (imagenesPorBloqueFicha is null)
+        {
+            //Es un método para mostrar error explicito
+            return NotFound(new { status = false, message = "No se encontraron las fotografías." });
+        }
+
+        foreach (var imagenesBloque in imagenesPorBloqueFicha)
+        {
+            if (!string.IsNullOrEmpty(imagenesBloque.ImgEstudiante) && imagenesBloque.ImgEstudiante.Length > 30)
+            {
+                var imgEstudianteBase64 = await _convertirImagenBase64Service.ConvertirImagenBase64(imagenesBloque.ImgEstudiante);
+                if (imgEstudianteBase64 != null)
+                {
+                    imagenesBloque.ImgEstudiante = imgEstudianteBase64;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(imagenesBloque.ImgFichaCalificacion) && imagenesBloque.ImgFichaCalificacion.Length > 30)
+            {
+                var imgFichaBase64 = await _convertirImagenBase64Service.ConvertirImagenBase64(imagenesBloque.ImgFichaCalificacion);
+                if (imgFichaBase64 != null)
+                {
+                    imagenesBloque.ImgFichaCalificacion = imgFichaBase64;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(imagenesBloque.ImgCarta) && imagenesBloque.ImgCarta.Length > 30)
+            {
+                var imgCartaBase64 = await _convertirImagenBase64Service.ConvertirImagenBase64(imagenesBloque.ImgCarta);
+                if (imgCartaBase64 != null)
+                {
+                    imagenesBloque.ImgCarta = imgCartaBase64;
+                }
+            }
+        }
+
+        return Ok(imagenesPorBloqueFicha);
+    }
+
 
     [HttpGet("infoficha/{id}")]
     //Información para visualizar datos
@@ -157,164 +275,6 @@ public class FichaCalificacionController : ControllerBase
     }
 
 
-    [HttpGet("obtenerNotasCursos/{codigoFicha}")]
-    public async Task<IActionResult> ObtenerNotasCursos(int codigoFicha)
-    {
-        try
-        {
-            int cantidadCursos = 0;
-            IEnumerable<CursoNotaOutDto> cursosBloqueI = null;
-            IEnumerable<CursoNotaOutDto> cursosBloqueII = null;
-            IEnumerable<CursoNotaOutDto> cursosBloqueIII = null;
-            IEnumerable<CursoNotaOutDto> cursosBloqueIV = null;
-            //Obtener codigo de ficha detalle del bloque I
-            var codigoFichaDetalleBloqueI = await _fichaCalificacionDetalleService.CodigoFichaDetalle(codigoFicha, 1);
-            if (codigoFichaDetalleBloqueI > 0)
-            {
-                //si existes el bloque uno
-                int codigoFichaDetalleI = codigoFichaDetalleBloqueI.Value;
-                cursosBloqueI = await _cursoFichaCalificacionService.ListaCursoPorFichaDetalle(codigoFichaDetalleI);
-                cantidadCursos = cursosBloqueI.Count();
-                Console.WriteLine($"La cantidad de cursos del bloque I es: {cantidadCursos}");
-            }
-            else
-            {
-                // Crear una lista de objetos que quieres introducir en la variable cursosBloqueIII
-                List<CursoNotaOutDto> objetosAInsertar = new List<CursoNotaOutDto>();
-
-                for (int i = 0; i < cantidadCursos; i++)
-                {
-                    CursoNotaOutDto objeto = new CursoNotaOutDto
-                    {
-                        CodigoFichaCalificacionDetalle = 0,
-                        CodigoCursoFichaCalificacion = 0,
-                        Bloque = 0,
-                        Curso = "",
-                        CodigoCurso = 0,
-                        Nota = 0
-                    };
-
-                    objetosAInsertar.Add(objeto);
-                }
-
-                // Ahora, asigna la lista de objetos a la variable cursosBloqueIII
-                cursosBloqueI = objetosAInsertar;
-            }
-
-            //Obtener codigo de ficha detalle del bloque II
-            var codigoFichaDetalleBloqueII = await _fichaCalificacionDetalleService.CodigoFichaDetalle(codigoFicha, 2);
-            if (codigoFichaDetalleBloqueII > 0)
-            {
-                int codigoFichaDetalleII = codigoFichaDetalleBloqueII.Value;
-                cursosBloqueII = await _cursoFichaCalificacionService.ListaCursoPorFichaDetalle(codigoFichaDetalleII);
-            }
-            else
-            {
-                // Crear una lista de objetos que quieres introducir en la variable cursosBloqueIII
-                List<CursoNotaOutDto> objetosAInsertar = new List<CursoNotaOutDto>();
-
-                for (int i = 0; i < cantidadCursos; i++)
-                {
-                    CursoNotaOutDto objeto = new CursoNotaOutDto
-                    {
-                        CodigoFichaCalificacionDetalle = 0,
-                        CodigoCursoFichaCalificacion = 0,
-                        Bloque = 0,
-                        Curso = "",
-                        CodigoCurso = 0,
-                        Nota = 0
-                    };
-
-                    objetosAInsertar.Add(objeto);
-                }
-
-                // Ahora, asigna la lista de objetos a la variable cursosBloqueIII
-                cursosBloqueII = objetosAInsertar;
-            }
-
-            //Obtener codigo de ficha detalle del bloque III
-            var codigoFichaDetalleBloqueIII = await _fichaCalificacionDetalleService.CodigoFichaDetalle(codigoFicha, 3);
-            if (codigoFichaDetalleBloqueIII > 0)
-            {
-                //Convertiendo en INT el codigo de ficha DETALLE
-                int codigoFichaDetalleIII = codigoFichaDetalleBloqueIII.Value;
-                cursosBloqueIII = await _cursoFichaCalificacionService.ListaCursoPorFichaDetalle(codigoFichaDetalleIII);
-            }
-            else
-            {
-                // Crear una lista de objetos que quieres introducir en la variable cursosBloqueIII
-                List<CursoNotaOutDto> objetosAInsertar = new List<CursoNotaOutDto>();
-
-                for (int i = 0; i < cantidadCursos; i++)
-                {
-                    CursoNotaOutDto objeto = new CursoNotaOutDto
-                    {
-                        CodigoFichaCalificacionDetalle = 0,
-                        CodigoCursoFichaCalificacion = 0,
-                        Bloque = 0,
-                        Curso = "",
-                        CodigoCurso = 0,
-                        Nota = 0
-                    };
-
-                    objetosAInsertar.Add(objeto);
-                }
-
-                // Ahora, asigna la lista de objetos a la variable cursosBloqueIII
-                cursosBloqueIII = objetosAInsertar;
-
-
-            }
-
-            //Obtener codigo de ficha detalle del bloque IV
-            var codigoFichaDetalleBloqueIV = await _fichaCalificacionDetalleService.CodigoFichaDetalle(codigoFicha, 4);
-            if (codigoFichaDetalleBloqueIV > 0)
-            {
-                int codigoFichaDetalleIV = codigoFichaDetalleBloqueIV.Value;
-                cursosBloqueIV = await _cursoFichaCalificacionService.ListaCursoPorFichaDetalle(codigoFichaDetalleIV);
-            }
-            else
-            {
-                Console.WriteLine("No existe bloque IV");
-                // Crear una lista de objetos que quieres introducir en la variable cursosBloqueIII
-                List<CursoNotaOutDto> objetosAInsertar = new List<CursoNotaOutDto>();
-
-                for (int i = 0; i < cantidadCursos; i++)
-                {
-                    CursoNotaOutDto objeto = new CursoNotaOutDto
-                    {
-                        CodigoFichaCalificacionDetalle = 0,
-                        CodigoCursoFichaCalificacion = 0,
-                        Bloque = 0,
-                        Curso = "",
-                        CodigoCurso = 0,
-                        Nota = 0
-                    };
-
-                    objetosAInsertar.Add(objeto);
-                }
-
-                // Ahora, asigna la lista de objetos a la variable cursosBloqueIII
-                cursosBloqueIV = objetosAInsertar;
-            }
-            var result = new
-            {
-                CursosBloqueI = cursosBloqueI,
-                CursosBloqueII = cursosBloqueII,
-                CursosBloqueIII = cursosBloqueIII,
-                CursosBloqueIV = cursosBloqueIV
-            };
-
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            // Manejar errores
-            return BadRequest("Error al obtener los resultados por código de curso");
-        }
-    }
-
-
     //PARA LA GRAFICA - OBTENIENDO BLOQUES Y PROMEDIOS
     [HttpGet("bloquesficha/{codigoFicha}")]
     public async Task<IActionResult> GetByCodigoFichaCalificacion(int codigoFicha)
@@ -339,44 +299,30 @@ public class FichaCalificacionController : ControllerBase
     }
 
 
-    //Crear ficha 
-    [HttpPost("create")]
-    public async Task<IActionResult> Create(FichaInput ficha)
-    {
-        string validationResult = await ValidateFicha(ficha);
-        if (!validationResult.Equals("valid"))
-        {
-            return BadRequest(new { message = validationResult });
-        }
-        FichaCalificacion fichaCalificacion = new FichaCalificacion();
-        fichaCalificacion.CodigoEstudiante = ficha.CodigoEstudiante;
-        fichaCalificacion.CodigoEstablecimiento = ficha.CodigoEstablecimiento;
-        fichaCalificacion.CodigoNivelAcademico = ficha.CodigoNivelAcademico;
-        fichaCalificacion.CodigoGrado = ficha.CodigoGrado;
-        fichaCalificacion.CodigoCarrera = ficha.CodigoCarrera;
-        fichaCalificacion.CicloEscolar = ficha.CicloEscolar;
-        fichaCalificacion.FechaRegistro = ficha.FechaRegistro;
-        var newFichaCalificacion = await _fichaCalificacionService.Create(fichaCalificacion);
-
-        return Ok("Ficha de calificacion creada");
-    }
-
-
     //CREAR FICHA CON IMÁGENES
-    [HttpPost("createficha")]
+    [HttpPost("createFicha")]
     public async Task<IActionResult> CrearFicha([FromForm] FichaInputModel model)
     {
         try
         {
-            if (model == null)
+            int sumaDeNotas = 0;
+            int contador = 0;
+            float promedioNotas = 0;
+
+            if (model == null || model.ImgEstudiante == null)
             {
                 return BadRequest("Los datos de la ficha son inválidos.");
             }
+            if (model.Cursos == null)
+            {
+                return BadRequest("No hay cursos para guardar...");
+            }
+
 
             var imgEstudiante = model.ImgEstudiante;
             var imgFicha = model.ImgFicha;
             var imgCarta = model.ImgCarta;
-            string folder = "Becarios";
+            string folder = "FichasCalificaciones";
             string imageUrlEstudiante = "sin imagen";
             string imageUrlFicha = "sin imagen";
             string imageUrlCarta = "sin imagen";
@@ -401,94 +347,103 @@ public class FichaCalificacionController : ControllerBase
             }
 
             //Guardando datos de la ficha
-            FichaCalificacion fichaCalificacion = new FichaCalificacion();
-            fichaCalificacion.CodigoEstudiante = model.CodigoEstudiante;
-            fichaCalificacion.CodigoEstablecimiento = model.CodigoEstablecimiento;
-            fichaCalificacion.CodigoNivelAcademico = model.CodigoNivelAcademico;
-            fichaCalificacion.CodigoGrado = model.CodigoGrado;
-            fichaCalificacion.CodigoCarrera = model.CodigoCarrera;
-            fichaCalificacion.CicloEscolar = model.CicloEscolar;
-            fichaCalificacion.FechaRegistro = model.FechaRegistro;
+            FichaCalificacion fichaCalificacion = new FichaCalificacion()
+            {
+                CodigoEstudiante = model.CodigoEstudiante,
+                CodigoEstablecimiento = model.CodigoEstablecimiento,
+                CodigoNivelAcademico = model.CodigoNivelAcademico,
+                CodigoGrado = model.CodigoGrado,
+                CodigoCarrera = model.CodigoCarrera,
+                CicloEscolar = model.CicloEscolar,
+                FechaRegistro = model.FechaRegistro,
+                CodigoModalidadEstudio = model.CodigoModalidadEstudio,
+                Estatus = model.Estatus
+            };
+
             var newFichaCalificacion = await _fichaCalificacionService.Create(fichaCalificacion);
             //Obteniendo el codigo de la ficha insertada
-            int codigoFichaCalificacion = newFichaCalificacion.CodigoFichaCalificacion;
+            int codigoFichaCalificacionInsertado = newFichaCalificacion.CodigoFichaCalificacion;
 
             //Guardando datos de detalle de evaluación
-            FichaCalificacionDetalle fichaCalificacionDetalle = new FichaCalificacionDetalle();
-            fichaCalificacionDetalle.CodigoFichaCalificacion = codigoFichaCalificacion;
-            fichaCalificacionDetalle.Bloque = 1;
-            fichaCalificacionDetalle.ImgEstudiante = imageUrlEstudiante;
-            fichaCalificacionDetalle.ImgFichaCalificacion = imageUrlFicha;
-            fichaCalificacionDetalle.ImgCarta = imageUrlCarta;
-            fichaCalificacionDetalle.Promedio = 0;
-            fichaCalificacionDetalle.Desempenio = "";
-            var newFichaCalificacionDetalle = await _fichaCalificacionDetalleService.Create(fichaCalificacionDetalle);
-
-            return Ok(newFichaCalificacionDetalle.CodigoFichaCalificacionDetalle);
-        }
-        catch
-        {
-            return BadRequest("No se pudo crear la ficha de calificación");
-
-        }
-
-    }
-
-    //Aquí se manda la lista de cursos y se va asignando a fichaDetalle recién creado
-    [HttpPost("createcurso")]
-    public async Task<IActionResult> GuardarCursosNotas([FromBody] List<CursoNota> cursosNotas)
-    {
-        // Aquí puedes procesar la lista de cursos y notas como desees
-        // Por ejemplo, puedes guardarlos en la base de datos
-        Console.WriteLine("Aqui se llegó");
-        Console.WriteLine("Ya hay respuesta");
-        int maxCodigo = await _fichaCalificacionDetalleService.GetMaxCodigoFichaCalificacionDetalle();
-        Console.WriteLine($"El ultimo registro insertado del bloque es: {maxCodigo}");
-
-        foreach (var cursoNota in cursosNotas)
-        {
-            Console.WriteLine($"CodigoCurso: {cursoNota.CodigoCurso}");
-            Console.WriteLine($"Curso: {cursoNota.Curso}");
-            Console.WriteLine($"Nota: {cursoNota.Nota}");
-
-            CursoFichaCalificacion cursoFichaCalificacion = new CursoFichaCalificacion();
-            cursoFichaCalificacion.CodigoFichaCalificacionDetalle = maxCodigo;
-            cursoFichaCalificacion.CodigoCurso = cursoNota.CodigoCurso;
-            cursoFichaCalificacion.Nota = cursoNota.Nota;
-            await _cursoFichaCalificacionService.Create(cursoFichaCalificacion);
-        }
-
-        return Ok("Cursos y notas guardados con éxito");
-    }
-    //Creación del NUEVO BLOQUE
-    //MODIFICAR IMAGENES EN EL BLOQUE
-    [HttpPost("createnuevobloque")]
-    public async Task<IActionResult> CrearNuevoBloque([FromForm] NuevoBloque model)
-    {
-        try
-        {
-            //Obteniendo los bloques que tiene la ficha para no replicarlos
-            var bloques = await _fichaCalificacionDetalleService.GetCuantosBloquesTieneFicha(model.CodigoFichaCalificacion);
-
-            foreach (var bloque in bloques)
+            FichaCalificacionDetalle fichaCalificacionDetalle = new FichaCalificacionDetalle()
             {
-                Console.WriteLine("Bloque: " + bloque);
-                Console.WriteLine("Model Bloque: " + model.Bloque);
-                if (model.Bloque == bloque)
+                CodigoFichaCalificacion = codigoFichaCalificacionInsertado,
+                Bloque = model.Bloque,
+                ImgEstudiante = imageUrlEstudiante,
+                ImgFichaCalificacion = imageUrlFicha,
+                ImgCarta = imageUrlCarta,
+                Promedio = 0,
+                Desempenio = "",
+                Estatus = "A"
+            };
+
+            var newFichaCalificacionDetalle = await _fichaCalificacionDetalleService.Create(fichaCalificacionDetalle);
+            int codigoFichaDetalleInsertado = newFichaCalificacionDetalle.CodigoFichaCalificacionDetalle;
+
+            //Inserción de los cursos
+
+            foreach (var curso in model.Cursos)
+            {
+                sumaDeNotas += curso.Nota;
+                contador++;
+                CursoFichaCalificacion cursoFichaCalificacion = new CursoFichaCalificacion()
                 {
-                    return BadRequest("El bloque ya existe");
+                    CodigoFichaCalificacionDetalle = codigoFichaDetalleInsertado,
+                    CodigoCurso = curso.CodigoCurso,
+                    Nota = curso.Nota,
+                    Estatus = "A"
+                };
+
+                await _cursoFichaCalificacionService.Create(cursoFichaCalificacion);
+                promedioNotas = sumaDeNotas / contador;
+            }
+            //Guardar promedio y codigoPromedio
+            var rangosDePromedios = await _fichaCalificacionService.RangosDePromedios();
+            int codigoPromedio = 0;
+            foreach (var rangos in rangosDePromedios)
+            {
+                if (promedioNotas >= rangos.ValorMinimo && promedioNotas <= rangos.ValorMaximo)
+                {
+                    codigoPromedio = rangos.CodigoPromedio;
                 }
             }
 
-            if (model == null)
+            await _fichaCalificacionService.UpdatePromedio(promedioNotas, codigoPromedio, codigoFichaDetalleInsertado);
+
+            return Ok(new { status = true, message = "La ficha de calificación fue creado correctamente." });
+        }
+        catch
+        {
+            return BadRequest("Se producjo un error al intentar guardar la ficha de calificación");
+
+        }
+
+    }
+
+    //Crear nuevo bloque de la ficha
+    [HttpPost("crearNuevoBloque/{codigoFichaCalificacion}")]
+    public async Task<IActionResult> CrearNuevoBloqueDeFichaEscolar([FromForm] NuevoBloqueFichaEscolar model, int codigoFichaCalificacion)
+    {
+        try
+        {
+            int sumaDeNotas = 0;
+            int contador = 0;
+            float promedioNotas = 0;
+
+            if (model == null || model.ImgEstudiante == null)
             {
                 return BadRequest("Los datos de la ficha son inválidos.");
             }
+            if (model.Cursos == null)
+            {
+                return BadRequest("No hay cursos para guardar...");
+            }
+
 
             var imgEstudiante = model.ImgEstudiante;
             var imgFicha = model.ImgFicha;
             var imgCarta = model.ImgCarta;
-            string folder = "Becarios";
+            string folder = "FichasCalificaciones";
             string imageUrlEstudiante = "sin imagen";
             string imageUrlFicha = "sin imagen";
             string imageUrlCarta = "sin imagen";
@@ -513,48 +468,61 @@ public class FichaCalificacionController : ControllerBase
             }
 
             //Guardando datos de detalle de evaluación
-            FichaCalificacionDetalle fichaCalificacionDetalle = new FichaCalificacionDetalle();
-            fichaCalificacionDetalle.CodigoFichaCalificacion = model.CodigoFichaCalificacion;
-            fichaCalificacionDetalle.Bloque = model.Bloque;
-            fichaCalificacionDetalle.ImgEstudiante = imageUrlEstudiante;
-            fichaCalificacionDetalle.ImgFichaCalificacion = imageUrlFicha;
-            fichaCalificacionDetalle.ImgCarta = imageUrlCarta;
-            fichaCalificacionDetalle.Promedio = 0;
-            fichaCalificacionDetalle.Desempenio = "";
-            await _fichaCalificacionDetalleService.Create(fichaCalificacionDetalle);
+            FichaCalificacionDetalle fichaCalificacionDetalle = new FichaCalificacionDetalle()
+            {
+                CodigoFichaCalificacion = codigoFichaCalificacion,
+                Bloque = model.Bloque,
+                ImgEstudiante = imageUrlEstudiante,
+                ImgFichaCalificacion = imageUrlFicha,
+                ImgCarta = imageUrlCarta,
+                Promedio = 0,
+                Desempenio = "",
+                Estatus = "A"
+            };
 
-            return Ok();
+            var newFichaCalificacionDetalle = await _fichaCalificacionDetalleService.Create(fichaCalificacionDetalle);
+            int codigoFichaDetalleInsertado = newFichaCalificacionDetalle.CodigoFichaCalificacionDetalle;
+
+            //Inserción de los cursos
+
+            foreach (var curso in model.Cursos)
+            {
+                sumaDeNotas += curso.Nota;
+                contador++;
+                CursoFichaCalificacion cursoFichaCalificacion = new CursoFichaCalificacion()
+                {
+                    CodigoFichaCalificacionDetalle = codigoFichaDetalleInsertado,
+                    CodigoCurso = curso.CodigoCurso,
+                    Nota = curso.Nota,
+                    Estatus = "A"
+                };
+
+                await _cursoFichaCalificacionService.Create(cursoFichaCalificacion);
+                promedioNotas = sumaDeNotas / contador;
+            }
+            //Guardar promedio y codigoPromedio
+            var rangosDePromedios = await _fichaCalificacionService.RangosDePromedios();
+            int codigoPromedio = 0;
+            foreach (var rangos in rangosDePromedios)
+            {
+                if (promedioNotas >= rangos.ValorMinimo && promedioNotas <= rangos.ValorMaximo)
+                {
+                    codigoPromedio = rangos.CodigoPromedio;
+                }
+            }
+
+            await _fichaCalificacionService.UpdatePromedio(promedioNotas, codigoPromedio, codigoFichaDetalleInsertado);
+
+            return Ok(new { status = true, message = "El nuevo bloque fue creado correctamente." });
         }
         catch
         {
-            return BadRequest("No se pudo crear el bloque de la ficha de calificación");
+            return BadRequest("Se producjo un error al intentar guardar el nuevo bloque de la ficha de calificaciones");
 
         }
+
     }
 
-    //CREAR CURSOS PARA EL SEGUNDO, TERCERO, Y CUARTO BLOQUE CREADO
-    [HttpPost("createcursosnuevobloque")]
-    public async Task<IActionResult> CursosNuevoBloque([FromBody] List<CursosNuevoBloque> cursosNuevoBloque)
-    {
-        Console.WriteLine("Aqui se llegó");
-        Console.WriteLine("Ya hay respuesta");
-        int maxCodigo = await _fichaCalificacionDetalleService.GetMaxCodigoFichaCalificacionDetalle();
-        Console.WriteLine($"El ultimo registro insertado del bloque es: {maxCodigo}");
-
-        foreach (var cursoNota in cursosNuevoBloque)
-        {
-            Console.WriteLine($"CodigoCurso: {cursoNota.CodigoCurso}");
-            Console.WriteLine($"Nota: {cursoNota.Nota}");
-
-            CursoFichaCalificacion cursoFichaCalificacion = new CursoFichaCalificacion();
-            cursoFichaCalificacion.CodigoFichaCalificacionDetalle = maxCodigo;
-            cursoFichaCalificacion.CodigoCurso = cursoNota.CodigoCurso;
-            cursoFichaCalificacion.Nota = cursoNota.Nota;
-            await _cursoFichaCalificacionService.Create(cursoFichaCalificacion);
-        }
-
-        return Ok("Cursos y notas guardados con éxito");
-    }
 
     //Aquí se crea otro curso y será asignado al bloque seleccionado
     [HttpPost("asignarcurso")]
@@ -566,28 +534,121 @@ public class FichaCalificacionController : ControllerBase
         return Ok("Cursos asignados con éxito");
     }
 
-    [HttpPut("updatecursonota/{id}")]
-    public async Task<IActionResult> UpdateCursoNota(int id, CursoFichaCalificacion cursoFichaCalificacion)
+    [HttpPut("actualizarNotaCurso/{codigoCursoFichaCalificacion}")]
+    public async Task<IActionResult> ActualizarNotaCurso(int codigoCursoFichaCalificacion, int notaCalificacion)
     {
-        var fichaCalificacionToUpdate = await _cursoFichaCalificacionService.GetById(id);
+        int contador = 0;
+        int sumaDeNotas = 0;
+        int promedioNotas = 0;
 
+        var fichaCalificacionToUpdate = await _cursoFichaCalificacionService.GetById(codigoCursoFichaCalificacion);
+        int codigoFichaDetalle = (int)fichaCalificacionToUpdate.CodigoFichaCalificacionDetalle;
         if (fichaCalificacionToUpdate is not null)
         {
-            await _cursoFichaCalificacionService.Update(id, cursoFichaCalificacion);
+            await _cursoFichaCalificacionService.ActualizarNotaCurso(codigoCursoFichaCalificacion, notaCalificacion);
+            //Obtener la lista los cursos para actualizar promedio y rango
+
+            var cursos = await _cursoFichaCalificacionService.ObtenerCursosProBloque(codigoFichaDetalle);
+            foreach (var curso in cursos)
+            {
+                sumaDeNotas += (int)curso.Nota;
+                contador++;
+            }
+            promedioNotas = sumaDeNotas / contador;
+            //Guardar promedio y codigoPromedio
+            var rangosDePromedios = await _fichaCalificacionService.RangosDePromedios();
+            int codigoPromedio = 0;
+            foreach (var rangos in rangosDePromedios)
+            {
+                if (promedioNotas >= rangos.ValorMinimo && promedioNotas <= rangos.ValorMaximo)
+                {
+                    codigoPromedio = rangos.CodigoPromedio;
+                }
+            }
+
+            await _fichaCalificacionService.UpdatePromedio(promedioNotas, codigoPromedio, codigoFichaDetalle);
+
+
             return Ok(new
             {
                 status = true,
-                message = "El curso fue modificado correctamente"
+                message = "La nota del curso fue modificado correctamente"
             });
         }
         else
         {
-            return FichaCalificacionNotFound(id);
+            return FichaCalificacionNotFound(codigoCursoFichaCalificacion);
         }
     }
 
 
-    //MODIFICAR IMAGENES EN EL BLOQUE
+    [HttpDelete("DeleteCurso/{codigoCursoFichaCalificacion}")]
+    public async Task<IActionResult> DeleteCursoFichaCalificacion(int codigoCursoFichaCalificacion)
+    {
+        int contador = 0;
+        int sumaDeNotas = 0;
+        int promedioNotas = 0;
+
+        var fichaCalificacionToUpdate = await _cursoFichaCalificacionService.GetById(codigoCursoFichaCalificacion);
+        if (fichaCalificacionToUpdate is not null)
+        {
+            int? codigoFichaDetalle = await _cursoFichaCalificacionService.EliminarCursoFichaCalifiacion(codigoCursoFichaCalificacion);
+
+            //Obtener la lista los cursos para actualizar promedio y rango
+
+            var cursos = await _cursoFichaCalificacionService.ObtenerCursosProBloque(codigoFichaDetalle ?? 0);
+            foreach (var curso in cursos)
+            {
+                sumaDeNotas += (int)curso.Nota;
+                contador++;
+            }
+            promedioNotas = sumaDeNotas / contador;
+
+
+
+            //Guardar promedio y codigoPromedio
+            var rangosDePromedios = await _fichaCalificacionService.RangosDePromedios();
+            int codigoPromedio = 0;
+            foreach (var rangos in rangosDePromedios)
+            {
+                if (promedioNotas >= rangos.ValorMinimo && promedioNotas <= rangos.ValorMaximo)
+                {
+                    codigoPromedio = rangos.CodigoPromedio;
+                }
+            }
+
+            await _fichaCalificacionService.UpdatePromedio(promedioNotas, codigoPromedio, codigoFichaDetalle ?? 0);
+
+            return Ok(new
+            {
+                status = true,
+                message = "La curso fue eliminado correctamente."
+            });
+        }
+        else
+        {
+            return NotFound(new { status = false, message = "El curso no se econtró." });
+        }
+    }
+
+    [HttpDelete("DeleteBloque/{codigoFichaCalificacionDetalle}")]
+    public async Task<IActionResult> DeleteBloqueFichaCalificacion(int codigoFichaCalificacionDetalle)
+    {
+        try
+        {
+            var codigoBloque = await _fichaCalificacionDetalleService.GetById(codigoFichaCalificacionDetalle);
+            if (codigoBloque is null)
+            {
+                return NotFound(new { status = false, message = "El bloque no se encontró." });
+            }
+            await _fichaCalificacionDetalleService.Delete(codigoFichaCalificacionDetalle);
+            return Ok(new{status = true, message="El bloque se borró correctamente."});
+        }catch{
+             return NotFound(new { status = false, message = "Hubo un error al eliminar el bloque." });
+        }
+
+    }
+    //MODIFICAR IMAGENE}S EN EL BLOQUE
     [HttpPut("updatefichadetalleimg/{codigoFichaDetalle}")]
     public async Task<IActionResult> ActualizrImgFichaDetalle([FromForm] FichaDetalleImgInputDto model, int codigoFichaDetalle)
     {
@@ -734,37 +795,46 @@ public class FichaInputModel
     public int CodigoEstablecimiento { get; set; }
     public int CodigoNivelAcademico { get; set; }
     public int CodigoGrado { get; set; }
-
     public int? CodigoCarrera { get; set; }
-
+    public int CodigoModalidadEstudio { get; set; }
     public DateTime? CicloEscolar { get; set; }
 
     public IFormFile? ImgEstudiante { get; set; }
     public IFormFile? ImgFicha { get; set; }
     public IFormFile? ImgCarta { get; set; }
     public DateTime? FechaRegistro { get; set; }
+    public int Bloque { get; set; }
+    public string? Estatus { get; set; }
+
+    public List<CursoNota> Cursos { get; set; } = new List<CursoNota>();
 
 }
 
 public class CursoNota
 {
     public int CodigoCurso { get; set; }
-    public string Curso { get; set; }
     public int Nota { get; set; }
 }
 
+
+//MODELO PARA EL NUEVO BLOQUE
+public class NuevoBloqueFichaEscolar
+{
+
+    public int CodigoFichaCalificacion { get; set; }
+    public int Bloque { get; set; }
+
+    public IFormFile? ImgEstudiante { get; set; }
+    public IFormFile? ImgFicha { get; set; }
+    public IFormFile? ImgCarta { get; set; }
+
+    public List<CursoNota> Cursos { get; set; } = new List<CursoNota>();
+
+}
+
+//Probablemente ni sirva
 public class CursosNuevoBloque
 {
     public int CodigoCurso { get; set; }
     public int Nota { get; set; }
-}
-
-//MODELO PARA EL NUEVO BLOQUE
-public class NuevoBloque
-{
-    public int CodigoFichaCalificacion { get; set; }
-    public int Bloque { get; set; }
-    public IFormFile ImgEstudiante { get; set; }
-    public IFormFile ImgFicha { get; set; }
-    public IFormFile ImgCarta { get; set; }
 }

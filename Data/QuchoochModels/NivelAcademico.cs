@@ -9,6 +9,8 @@ public partial class NivelAcademico
 
     public string NombreNivelAcademico { get; set; } = null!;
 
+    public string? Estatus { get; set; }
+
     public virtual ICollection<Carrera> Carreras { get; set; } = new List<Carrera>();
 
     public virtual ICollection<Curso> Cursos { get; set; } = new List<Curso>();

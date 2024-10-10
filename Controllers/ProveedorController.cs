@@ -43,6 +43,12 @@ public class ProveedorController : ControllerBase
         return Ok(resultado);
     }
 
+     [HttpGet("selectall")]
+    public async Task<IEnumerable<Proveedor>> Get()
+    {
+        return await _proveedorService.SelectAll();
+    }
+
     [HttpGet("{id}")]
     public async Task<ActionResult<Proveedor>> GetById(int id)
     {
@@ -60,10 +66,15 @@ public class ProveedorController : ControllerBase
     [HttpPost("create")]
     public async Task <IActionResult> Create(Proveedor proveedor)
     {
+        try{
         var newProveedor = await _proveedorService.Create(proveedor);
 
         return Ok(new{status = true, 
                       message = "El proveedor se creó correctamente"});
+        }catch (Exception ex)
+         {
+            return StatusCode(500, new { status = false, message = "Ocurrió un error al crear el proveedor", error = ex.Message });
+         }
     }
 
     [HttpPut("update/{id}")]
@@ -76,7 +87,7 @@ public class ProveedorController : ControllerBase
         {
             await _proveedorService.Update(id, proveedor);
            return Ok(new{status = true, 
-                      message = "El proveedor se modificó correctamente"});
+                      message = "El proveedor fue modificado correctamente"});
         }
         else
         {
@@ -92,7 +103,8 @@ public class ProveedorController : ControllerBase
         if(proveedorToDelete is not null)
         {
             await _proveedorService.Delete(id);
-            return Ok();
+           return Ok(new{status = true, 
+                      message = "El proveedor fue eliminado correctamente"});
         }
         else
         {

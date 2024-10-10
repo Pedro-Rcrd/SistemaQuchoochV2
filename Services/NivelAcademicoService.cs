@@ -32,6 +32,11 @@ public class NivelAcademicoService
         return await _context.NivelAcademicos.CountAsync();
     }
 
+    public async Task<IEnumerable<NivelAcademico>> SelectAll()
+    {
+        return await _context.NivelAcademicos.ToListAsync();
+    }
+
     //Metodo para obtener la información por ID.
     public async Task<NivelAcademico?> GetById(int id) //Rol? = Indica que devuelve un objeto rol o un null
     {
@@ -55,6 +60,7 @@ public class NivelAcademicoService
         if(existingNivelAcademico is not null)
         {
             existingNivelAcademico.NombreNivelAcademico = nivelAcademicoDto.NombreNivelAcademico;
+            existingNivelAcademico.Estatus = nivelAcademicoDto.Estatus;
             await _context.SaveChangesAsync();
         }
     }
@@ -66,7 +72,7 @@ public class NivelAcademicoService
 
         if(nivelAcademicoToDelete is not null)
         {
-            _context.NivelAcademicos.Remove(nivelAcademicoToDelete);
+              nivelAcademicoToDelete.Estatus = "I";
             await _context.SaveChangesAsync();
         }
     }

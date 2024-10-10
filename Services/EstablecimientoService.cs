@@ -5,7 +5,7 @@ using sistemaQuchooch.Data.QuchoochModels;
 
 namespace sistemaQuchooch.Sevices;
 
-public class EstablecimientoService 
+public class EstablecimientoService
 {
     private readonly QuchoochContext _context;
 
@@ -16,14 +16,14 @@ public class EstablecimientoService
     }
 
     //Metodo para obtener toda la información de Establecimiento
-     public async Task<IEnumerable<Establecimiento>> GetAll(int pagina, int elementosPorPagina)
-{
-    var establecimientos = await _context.Establecimientos
-        .Skip((pagina - 1) * elementosPorPagina)
-        .Take(elementosPorPagina)
-        .ToListAsync();
-    return establecimientos;
-}
+    public async Task<IEnumerable<Establecimiento>> GetAll(int pagina, int elementosPorPagina)
+    {
+        var establecimientos = await _context.Establecimientos
+            .Skip((pagina - 1) * elementosPorPagina)
+            .Take(elementosPorPagina)
+            .ToListAsync();
+        return establecimientos;
+    }
 
     public async Task<int> CantidadTotalRegistros()
     {
@@ -35,8 +35,15 @@ public class EstablecimientoService
         return await _context.Establecimientos.FindAsync(id);
     }
 
+    public async Task<IEnumerable<Establecimiento>> SelectAll()
+    {
+        // return await _context.Carreras.ToListAsync();
+        var establecimientos = await _context.Establecimientos.ToListAsync();
+        return establecimientos;
+    }
+
     //Método para crear nueva Establecimiento
-    public async Task<Establecimiento> Create (Establecimiento newEstablecimiento)
+    public async Task<Establecimiento> Create(Establecimiento newEstablecimiento)
     {
         _context.Establecimientos.Add(newEstablecimiento);
         await _context.SaveChangesAsync();
@@ -45,25 +52,26 @@ public class EstablecimientoService
     }
 
     //Metodo para actualizar datos de la ocmunidad
-    public async Task Update (int id, Establecimiento establecimiento)
+    public async Task Update(int id, Establecimiento establecimiento)
     {
         var existingEstablecimiento = await GetById(id);
 
-        if(existingEstablecimiento is not null)
+        if (existingEstablecimiento is not null)
         {
             existingEstablecimiento.NombreEstablecimiento = establecimiento.NombreEstablecimiento;
+            existingEstablecimiento.Estatus = establecimiento.Estatus;
             await _context.SaveChangesAsync();
         }
     }
 
     //Metodo para elminar una Establecimiento
-    public async Task Delete (int id)
+    public async Task Delete(int id)
     {
         var establecimientoToDelete = await GetById(id);
 
-        if(establecimientoToDelete is not null)
+        if (establecimientoToDelete is not null)
         {
-            _context.Establecimientos.Remove(establecimientoToDelete);
+             establecimientoToDelete.Estatus = "I";
             await _context.SaveChangesAsync();
         }
     }

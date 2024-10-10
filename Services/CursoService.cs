@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using sistemaQuchooch.Data;
+using sistemaQuchooch.Data.DTOs;
 using sistemaQuchooch.Data.QuchoochModels;
 
 
@@ -30,6 +31,18 @@ public class CursoService
         return await _context.Cursos.CountAsync();
     }
 
+     public async Task<IEnumerable<CursoDto>> SelectAll()
+    {
+       // return await _context.Carreras.ToListAsync();
+        var cursos = await _context.Cursos.Select(a => new CursoDto{
+            CodigoCurso = a.CodigoCurso,
+            CodigoNivelAcademico = a.CodigoNivelAcademico,
+            NivelAcademico = a.CodigoNivelAcademicoNavigation != null ? a.CodigoNivelAcademicoNavigation.NombreNivelAcademico : "",
+            NombreCurso = a.NombreCurso,
+            Estatus = a.Estatus
+        }).ToListAsync();
+        return cursos;
+    }
 
     //Metodo para obtener la información por ID.
     public async Task<Curso?> GetById(int id) //Rol? = Indica que devuelve un objeto rol o un null
@@ -55,6 +68,7 @@ public class CursoService
         {
             existingCurso.NombreCurso = curso.NombreCurso;
             existingCurso.CodigoNivelAcademico = curso.CodigoNivelAcademico;
+            existingCurso.Estatus = curso.Estatus;
 
             await _context.SaveChangesAsync();
         }
@@ -67,7 +81,7 @@ public class CursoService
 
         if(cursoToDelete is not null)
         {
-            _context.Cursos.Remove(cursoToDelete);
+            cursoToDelete.Estatus = "I";
             await _context.SaveChangesAsync();
         }
     }

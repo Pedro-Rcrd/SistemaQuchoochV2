@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using sistemaQuchooch.Sevices;
 using sistemaQuchooch.Data.QuchoochModels;
+using sistemaQuchooch.Data.DTOs;
 using Microsoft.AspNetCore.Authorization;
 
 
@@ -43,6 +44,12 @@ public class CursoController : ControllerBase
         return Ok(resultado);
     }
 
+      [HttpGet("selectall")]
+    public async Task<IEnumerable<CursoDto>> SelectAll()
+    {
+        return await _cursoService.SelectAll();
+    }
+
     [HttpGet("{id}")]
     public async Task<ActionResult<Curso>> GetById(int id)
     {
@@ -60,10 +67,15 @@ public class CursoController : ControllerBase
     [HttpPost("create")]
     public async Task <IActionResult> Create(Curso curso)
     {
-        var newCurso = await _cursoService.Create(curso);
+        try{
 
+        await _cursoService.Create(curso);
         return Ok(new{status = true, 
          message = "El curso fue creado correctamente"});
+         }catch (Exception ex)
+         {
+            return StatusCode(500, new { status = false, message = "Ocurrió un error al crear el curso", error = ex.Message });
+         }
     }
 
     [HttpPut("update/{id}")]
@@ -80,8 +92,7 @@ public class CursoController : ControllerBase
         }
         else
         {
-            return Ok(new{status = true, 
-                      message = "El curso fue modificado correctamente"});
+            return CursoNotFound(id);
         }
     }
 
@@ -93,7 +104,8 @@ public class CursoController : ControllerBase
         if(cursoToDelete is not null)
         {
             await _cursoService.Delete(id);
-            return Ok();
+            return Ok(new{status = true, 
+                      message = "El curso fue eliminado correctamente"});
         }
         else
         {

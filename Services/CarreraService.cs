@@ -34,6 +34,20 @@ public class CarreraService
         return await _context.Carreras.CountAsync();
     }
 
+    public async Task<IEnumerable<CarreraDto>> SelectAll()
+    {
+       // return await _context.Carreras.ToListAsync();
+        var carreras = await _context.Carreras.Select(a => new CarreraDto{
+            CodigoCarrera = a.CodigoCarrera,
+            CodigoNivelAcademico = a.CodigoNivelAcademico,
+            NivelAcademico = a.CodigoNivelAcademicoNavigation != null ? a.CodigoNivelAcademicoNavigation.NombreNivelAcademico : "",
+            NombreCarrera = a.NombreCarrera,
+            Estatus = a.Estatus
+        }).ToListAsync();
+
+        return carreras;
+    }
+
     //Metodo para obtener la información por ID.
     public async Task<CarreraDto?> GetByIdDto(int id) //Rol? = Indica que devuelve un objeto rol o un null
     {
@@ -67,6 +81,7 @@ public class CarreraService
         {
             existingCarrera.CodigoNivelAcademico = carrera.CodigoNivelAcademico;
             existingCarrera.NombreCarrera = carrera.NombreCarrera;
+            existingCarrera.Estatus = carrera.Estatus;
             await _context.SaveChangesAsync();
         }
     }
@@ -78,7 +93,7 @@ public class CarreraService
 
         if (carreraToDelete is not null)
         {
-            _context.Carreras.Remove(carreraToDelete);
+            carreraToDelete.Estatus = "I";
             await _context.SaveChangesAsync();
         }
     }

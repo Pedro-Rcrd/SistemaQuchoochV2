@@ -121,7 +121,7 @@ public class FichaCalificacionDetalleService
 
         if (fichaCalificacionDetalleToDelete is not null)
         {
-            _context.FichaCalificacionDetalles.Remove(fichaCalificacionDetalleToDelete);
+            fichaCalificacionDetalleToDelete.Estatus = "I";
             await _context.SaveChangesAsync();
         }
     }

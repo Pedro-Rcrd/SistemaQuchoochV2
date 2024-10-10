@@ -72,6 +72,8 @@ builder.Services.AddScoped<FichaCalificacionDetalleService>();
 builder.Services.AddScoped<CursoFichaCalificacionService>();
 builder.Services.AddScoped<PatrocinadorService>();
 builder.Services.AddScoped<EstudiantePatrocinadorService>();
+builder.Services.AddScoped<ModalidadEstudioService>();
+builder.Services.AddScoped<ConvertirImagenBase64Service>();
 
 
 

@@ -21,6 +21,10 @@ public partial class FichaCalificacion
 
     public DateTime? FechaRegistro { get; set; }
 
+    public int? CodigoModalidadEstudio { get; set; }
+
+    public string? Estatus { get; set; }
+
     public virtual Carrera? CodigoCarreraNavigation { get; set; }
 
     public virtual Establecimiento CodigoEstablecimientoNavigation { get; set; } = null!;
@@ -28,6 +32,8 @@ public partial class FichaCalificacion
     public virtual Estudiante CodigoEstudianteNavigation { get; set; } = null!;
 
     public virtual Grado CodigoGradoNavigation { get; set; } = null!;
+
+    public virtual ModalidadEstudio? CodigoModalidadEstudioNavigation { get; set; }
 
     public virtual NivelAcademico CodigoNivelAcademicoNavigation { get; set; } = null!;
 

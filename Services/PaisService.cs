@@ -21,6 +21,11 @@ public class PaisService
         return await _context.Pais.ToListAsync();
     }
 
+     public async Task<IEnumerable<Pai>> SelectAll()
+    {
+        return await _context.Pais.ToListAsync();
+    }
+
     //Metodo para obtener la información por ID.
     public async Task<Pai?> GetById(int id) //Rol? = Indica que devuelve un objeto rol o un null
     {
@@ -44,6 +49,7 @@ public class PaisService
         if(existingPais is not null)
         {
             existingPais.Nombre = pais.Nombre;
+            existingPais.Estatus = pais.Estatus;
             await _context.SaveChangesAsync();
         }
     }
@@ -55,7 +61,7 @@ public class PaisService
 
         if(paisToDelete is not null)
         {
-            _context.Pais.Remove(paisToDelete);
+            paisToDelete.Estatus = "I";
             await _context.SaveChangesAsync();
         }
     }

@@ -2,16 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace sistemaQuchooch.Data.QuchoochModels;
+namespace sistemaQuchooch.Data.DTOs;
 
-public partial class CarreraDto
+public partial class CursoDto
 {
-    public int CodigoCarrera { get; set; }
+    public int CodigoCurso { get; set; }
 
     public int? CodigoNivelAcademico { get; set; }
     public string? NivelAcademico { get; set; }
 
-    public string NombreCarrera { get; set; } = null!;
+    public string NombreCurso { get; set; } = null!;
 
     public string? Estatus { get; set; }
 

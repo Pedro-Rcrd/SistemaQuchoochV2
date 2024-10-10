@@ -9,5 +9,7 @@ public partial class Comunidad
 
     public string NombreComunidad { get; set; } = null!;
 
+    public string? Estatus { get; set; }
+
     public virtual ICollection<Estudiante> Estudiantes { get; set; } = new List<Estudiante>();
 }

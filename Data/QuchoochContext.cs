@@ -42,6 +42,8 @@ public partial class QuchoochContext : DbContext
 
     public virtual DbSet<Grado> Grados { get; set; }
 
+    public virtual DbSet<ModalidadEstudio> ModalidadEstudios { get; set; }
+
     public virtual DbSet<Modulo> Modulos { get; set; }
 
     public virtual DbSet<NivelAcademico> NivelAcademicos { get; set; }
@@ -56,11 +58,17 @@ public partial class QuchoochContext : DbContext
 
     public virtual DbSet<Permiso> Permisos { get; set; }
 
+    public virtual DbSet<Promedio> Promedios { get; set; }
+
     public virtual DbSet<Proveedor> Proveedors { get; set; }
 
     public virtual DbSet<Rol> Rols { get; set; }
 
     public virtual DbSet<Usuario> Usuarios { get; set; }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
+        => optionsBuilder.UseSqlServer("Server=PEDRO-LàPEZ; Database=quchooch;TrustServerCertificate=True; Trusted_connection=true; TrustServerCertificate=True");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -84,6 +92,10 @@ public partial class QuchoochContext : DbContext
 
             entity.Property(e => e.CodigoCarrera).HasColumnName("codigoCarrera");
             entity.Property(e => e.CodigoNivelAcademico).HasColumnName("codigoNivelAcademico");
+            entity.Property(e => e.Estatus)
+                .HasMaxLength(1)
+                .IsUnicode(false)
+                .HasColumnName("estatus");
             entity.Property(e => e.NombreCarrera)
                 .HasMaxLength(128)
                 .IsUnicode(false)
@@ -101,6 +113,10 @@ public partial class QuchoochContext : DbContext
             entity.ToTable("comunidad");
 
             entity.Property(e => e.CodigoComunidad).HasColumnName("codigoComunidad");
+            entity.Property(e => e.Estatus)
+                .HasMaxLength(1)
+                .IsUnicode(false)
+                .HasColumnName("estatus");
             entity.Property(e => e.NombreComunidad)
                 .HasMaxLength(128)
                 .IsUnicode(false)
@@ -115,6 +131,10 @@ public partial class QuchoochContext : DbContext
 
             entity.Property(e => e.CodigoCurso).HasColumnName("codigoCurso");
             entity.Property(e => e.CodigoNivelAcademico).HasColumnName("codigoNivelAcademico");
+            entity.Property(e => e.Estatus)
+                .HasMaxLength(1)
+                .IsUnicode(false)
+                .HasColumnName("estatus");
             entity.Property(e => e.NombreCurso)
                 .HasMaxLength(128)
                 .IsUnicode(false)
@@ -134,6 +154,10 @@ public partial class QuchoochContext : DbContext
             entity.Property(e => e.CodigoCursoFichaCalificacion).HasColumnName("codigoCursoFichaCalificacion");
             entity.Property(e => e.CodigoCurso).HasColumnName("codigoCurso");
             entity.Property(e => e.CodigoFichaCalificacionDetalle).HasColumnName("codigoFichaCalificacionDetalle");
+            entity.Property(e => e.Estatus)
+                .HasMaxLength(1)
+                .IsUnicode(false)
+                .HasColumnName("estatus");
             entity.Property(e => e.Nota).HasColumnName("nota");
 
             entity.HasOne(d => d.CodigoCursoNavigation).WithMany(p => p.CursoFichaCalificacions)
@@ -152,6 +176,10 @@ public partial class QuchoochContext : DbContext
             entity.ToTable("establecimiento");
 
             entity.Property(e => e.CodigoEstablecimiento).HasColumnName("codigoEstablecimiento");
+            entity.Property(e => e.Estatus)
+                .HasMaxLength(1)
+                .IsUnicode(false)
+                .HasColumnName("estatus");
             entity.Property(e => e.NombreEstablecimiento)
                 .HasMaxLength(128)
                 .IsUnicode(false)
@@ -177,6 +205,7 @@ public partial class QuchoochContext : DbContext
             entity.Property(e => e.CodigoComunidad).HasColumnName("codigoComunidad");
             entity.Property(e => e.CodigoEstablecimiento).HasColumnName("codigoEstablecimiento");
             entity.Property(e => e.CodigoGrado).HasColumnName("codigoGrado");
+            entity.Property(e => e.CodigoModalidadEstudio).HasColumnName("codigoModalidadEstudio");
             entity.Property(e => e.CodigoNivelAcademico).HasColumnName("codigoNivelAcademico");
             entity.Property(e => e.Descripcion)
                 .HasMaxLength(256)
@@ -251,6 +280,10 @@ public partial class QuchoochContext : DbContext
                 .HasForeignKey(d => d.CodigoGrado)
                 .HasConstraintName("fk_estudiante_grado_codigoGrado");
 
+            entity.HasOne(d => d.CodigoModalidadEstudioNavigation).WithMany(p => p.Estudiantes)
+                .HasForeignKey(d => d.CodigoModalidadEstudio)
+                .HasConstraintName("fk_estudiante_modalidadEstudio_codigoModalidadEstudio");
+
             entity.HasOne(d => d.CodigoNivelAcademicoNavigation).WithMany(p => p.Estudiantes)
                 .HasForeignKey(d => d.CodigoNivelAcademico)
                 .HasConstraintName("fk_estudiante_nivelAcademico_codigoNivelAcademico");
@@ -291,7 +324,12 @@ public partial class QuchoochContext : DbContext
             entity.Property(e => e.CodigoEstablecimiento).HasColumnName("codigoEstablecimiento");
             entity.Property(e => e.CodigoEstudiante).HasColumnName("codigoEstudiante");
             entity.Property(e => e.CodigoGrado).HasColumnName("codigoGrado");
+            entity.Property(e => e.CodigoModalidadEstudio).HasColumnName("codigoModalidadEstudio");
             entity.Property(e => e.CodigoNivelAcademico).HasColumnName("codigoNivelAcademico");
+            entity.Property(e => e.Estatus)
+                .HasMaxLength(1)
+                .IsUnicode(false)
+                .HasColumnName("estatus");
             entity.Property(e => e.FechaRegistro)
                 .HasColumnType("date")
                 .HasColumnName("fechaRegistro");
@@ -315,6 +353,10 @@ public partial class QuchoochContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_fichaCalificacion_grado_codigoGrado");
 
+            entity.HasOne(d => d.CodigoModalidadEstudioNavigation).WithMany(p => p.FichaCalificacions)
+                .HasForeignKey(d => d.CodigoModalidadEstudio)
+                .HasConstraintName("fk_fichaCalificacion_modalidadEstudio_codigoModalidadEstudio");
+
             entity.HasOne(d => d.CodigoNivelAcademicoNavigation).WithMany(p => p.FichaCalificacions)
                 .HasForeignKey(d => d.CodigoNivelAcademico)
                 .OnDelete(DeleteBehavior.ClientSetNull)
@@ -330,9 +372,12 @@ public partial class QuchoochContext : DbContext
             entity.Property(e => e.CodigoFichaCalificacionDetalle).HasColumnName("codigoFichaCalificacionDetalle");
             entity.Property(e => e.Bloque).HasColumnName("bloque");
             entity.Property(e => e.CodigoFichaCalificacion).HasColumnName("codigoFichaCalificacion");
-            entity.Property(e => e.Desempenio)
-                .HasMaxLength(32)
-                .IsUnicode(false);
+            entity.Property(e => e.CodigoPromedio).HasColumnName("codigoPromedio");
+            entity.Property(e => e.Desempenio).HasMaxLength(128);
+            entity.Property(e => e.Estatus)
+                .HasMaxLength(1)
+                .IsUnicode(false)
+                .HasColumnName("estatus");
             entity.Property(e => e.ImgCarta).HasColumnName("imgCarta");
             entity.Property(e => e.ImgEstudiante).HasColumnName("imgEstudiante");
             entity.Property(e => e.ImgFichaCalificacion).HasColumnName("imgFichaCalificacion");
@@ -343,6 +388,10 @@ public partial class QuchoochContext : DbContext
             entity.HasOne(d => d.CodigoFichaCalificacionNavigation).WithMany(p => p.FichaCalificacionDetalles)
                 .HasForeignKey(d => d.CodigoFichaCalificacion)
                 .HasConstraintName("fk_fichaCalificacionDetalle_fichaCalificacion_codigoFichaCalificacion");
+
+            entity.HasOne(d => d.CodigoPromedioNavigation).WithMany(p => p.FichaCalificacionDetalles)
+                .HasForeignKey(d => d.CodigoPromedio)
+                .HasConstraintName("fk_fichaCalificacionDetalle_promedio_desempenio");
         });
 
         modelBuilder.Entity<Gasto>(entity =>
@@ -424,10 +473,31 @@ public partial class QuchoochContext : DbContext
             entity.ToTable("grado");
 
             entity.Property(e => e.CodigoGrado).HasColumnName("codigoGrado");
+            entity.Property(e => e.Estatus)
+                .HasMaxLength(1)
+                .IsUnicode(false)
+                .HasColumnName("estatus");
             entity.Property(e => e.NombreGrado)
                 .HasMaxLength(128)
                 .IsUnicode(false)
                 .HasColumnName("nombreGrado");
+        });
+
+        modelBuilder.Entity<ModalidadEstudio>(entity =>
+        {
+            entity.HasKey(e => e.CodigoModalidadEstudio).HasName("pk_modalidadEstudio_codigoModalidadEstudio");
+
+            entity.ToTable("modalidadEstudio");
+
+            entity.Property(e => e.CodigoModalidadEstudio).HasColumnName("codigoModalidadEstudio");
+            entity.Property(e => e.Estatus)
+                .HasMaxLength(1)
+                .IsUnicode(false)
+                .HasColumnName("estatus");
+            entity.Property(e => e.NombreModalidadEstudio)
+                .HasMaxLength(64)
+                .IsUnicode(false)
+                .HasColumnName("nombreModalidadEstudio");
         });
 
         modelBuilder.Entity<Modulo>(entity =>
@@ -449,6 +519,10 @@ public partial class QuchoochContext : DbContext
             entity.ToTable("nivelAcademico");
 
             entity.Property(e => e.CodigoNivelAcademico).HasColumnName("codigoNivelAcademico");
+            entity.Property(e => e.Estatus)
+                .HasMaxLength(1)
+                .IsUnicode(false)
+                .HasColumnName("estatus");
             entity.Property(e => e.NombreNivelAcademico)
                 .HasMaxLength(128)
                 .IsUnicode(false)
@@ -530,6 +604,10 @@ public partial class QuchoochContext : DbContext
             entity.ToTable("pais");
 
             entity.Property(e => e.CodigoPais).HasColumnName("codigoPais");
+            entity.Property(e => e.Estatus)
+                .HasMaxLength(1)
+                .IsUnicode(false)
+                .HasColumnName("estatus");
             entity.Property(e => e.Nombre)
                 .HasMaxLength(128)
                 .IsUnicode(false)
@@ -599,6 +677,20 @@ public partial class QuchoochContext : DbContext
                 .HasConstraintName("fk_permiso_rol_codigoRol");
         });
 
+        modelBuilder.Entity<Promedio>(entity =>
+        {
+            entity.HasKey(e => e.CodigoPromedio).HasName("pk_promedio_codigoPromedio");
+
+            entity.ToTable("promedio");
+
+            entity.Property(e => e.CodigoPromedio).HasColumnName("codigoPromedio");
+            entity.Property(e => e.Descripcion)
+                .HasMaxLength(32)
+                .HasColumnName("descripcion");
+            entity.Property(e => e.ValorMaximo).HasColumnName("valorMaximo");
+            entity.Property(e => e.ValorMinimo).HasColumnName("valorMinimo");
+        });
+
         modelBuilder.Entity<Proveedor>(entity =>
         {
             entity.HasKey(e => e.CodigoProveedor).HasName("pk_proveedor_codigoProveedor");
@@ -610,6 +702,10 @@ public partial class QuchoochContext : DbContext
                 .HasMaxLength(128)
                 .IsUnicode(false)
                 .HasColumnName("descripcion");
+            entity.Property(e => e.Estatus)
+                .HasMaxLength(1)
+                .IsUnicode(false)
+                .HasColumnName("estatus");
             entity.Property(e => e.NombreEncargado)
                 .HasMaxLength(128)
                 .IsUnicode(false)

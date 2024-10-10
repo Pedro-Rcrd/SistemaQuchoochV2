@@ -16,7 +16,7 @@ public class GradoService
     }
 
     //Metodo para obtener toda la información de Grados
-    public async Task<IEnumerable<Grado>> GetAll()
+    public async Task<IEnumerable<Grado>> SelectAll()
     {
         return await _context.Grados.ToListAsync();
     }

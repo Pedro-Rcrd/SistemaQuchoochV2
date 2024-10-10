@@ -21,7 +21,13 @@ public partial class FichaCalificacionDetalle
 
     public string? Desempenio { get; set; }
 
+    public string? Estatus { get; set; }
+
+    public int? CodigoPromedio { get; set; }
+
     public virtual FichaCalificacion? CodigoFichaCalificacionNavigation { get; set; }
+
+    public virtual Promedio? CodigoPromedioNavigation { get; set; }
 
     public virtual ICollection<CursoFichaCalificacion> CursoFichaCalificacions { get; set; } = new List<CursoFichaCalificacion>();
 }

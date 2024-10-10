@@ -11,6 +11,8 @@ public partial class Carrera
 
     public string NombreCarrera { get; set; } = null!;
 
+    public string? Estatus { get; set; }
+
     public virtual NivelAcademico? CodigoNivelAcademicoNavigation { get; set; }
 
     public virtual ICollection<Estudiante> Estudiantes { get; set; } = new List<Estudiante>();

@@ -54,6 +54,14 @@ public class CursoFichaCalificacionService
         return cursosNotas;
     }
 
+    public async Task<List<CursoFichaCalificacion>> ObtenerCursosProBloque(int codigoFichaDetalle)
+    {
+        var cursos = await _context.CursoFichaCalificacions
+        .Where(curso => curso.CodigoFichaCalificacionDetalle == codigoFichaDetalle && curso.Estatus == "A")
+        .ToListAsync();
+
+        return cursos;
+    }
 
 
 
@@ -91,6 +99,36 @@ public class CursoFichaCalificacionService
         }
     }
 
+    //Metodo para actualizar datos de la ocmunidad
+    public async Task ActualizarNotaCurso(int codigoCursoFichaCalificacion, int notaCalificacion)
+    {
+        var existingCursoFichaCalificacion = await GetById(codigoCursoFichaCalificacion);
+
+        if (existingCursoFichaCalificacion is not null)
+        {
+            existingCursoFichaCalificacion.Nota = notaCalificacion;
+            await _context.SaveChangesAsync();
+        }
+    }
+
+    public async Task<int?> EliminarCursoFichaCalifiacion(int codigoCursoFichaCalificacion)
+    {
+        var existingCursoFichaCalificacion = await GetById(codigoCursoFichaCalificacion);
+
+        if (existingCursoFichaCalificacion is not null)
+        {
+            existingCursoFichaCalificacion.Estatus = "I";  // Marcado como inactivo
+            await _context.SaveChangesAsync();
+
+            // Devuelve el CodigoFichaCalificacionDetalle del curso modificado
+            return existingCursoFichaCalificacion.CodigoFichaCalificacionDetalle;
+        }
+
+        // Si no se encuentra, devuelve null
+        return null;
+    }
+
+
     //Metodo para elminar una CursoFichaCalificacion
     public async Task Delete(int id)
     {
@@ -102,4 +140,6 @@ public class CursoFichaCalificacionService
             await _context.SaveChangesAsync();
         }
     }
+
+   
 }

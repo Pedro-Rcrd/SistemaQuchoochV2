@@ -44,6 +44,13 @@ public class NivelAcademicoController : ControllerBase
         return Ok(resultado);
     }
 
+      //Metodo para obtener la lista de niveles academicos
+    [HttpGet("selectall")]
+    public async Task<IEnumerable<NivelAcademico>> Get()
+    {
+        return await _nivelAcademicoService.SelectAll();
+    }
+
     [HttpGet("{id}")]
     public async Task<ActionResult<NivelAcademico>> GetById(int id)
     {
@@ -61,10 +68,16 @@ public class NivelAcademicoController : ControllerBase
     [HttpPost("create")]
     public async Task <IActionResult> Create(NivelAcademico nivelAcademico)
     {
+        try{
+
         var newNivelAcademico = await _nivelAcademicoService.Create(nivelAcademico);
 
         return Ok(new{status = true, 
-                      message = "El Nivel academico se creo correctamente"});
+                      message = "El Nivel academico se creó correctamente"});
+        }catch (Exception ex)
+         {
+            return StatusCode(500, new { status = false, message = "Ocurrió un error al crear el nivel academico", error = ex.Message });
+         }
     }
 
     [HttpPut("update/{id}")]
@@ -92,7 +105,8 @@ public class NivelAcademicoController : ControllerBase
         if(nivelAcademicoToDelete is not null)
         {
             await _nivelAcademicoService.Delete(id);
-            return Ok();
+            return Ok(new{status = true, 
+                      message = "El nivel academico fue eliminado correctamente"});
         }
         else
         {

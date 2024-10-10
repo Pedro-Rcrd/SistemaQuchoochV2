@@ -17,9 +17,10 @@ public partial class FichaCalificacionOutDto
 
     public string NivelAcademico { get; set; }
 
-    public string Grado { get; set; }
+    public string? Grado { get; set; }
 
-    public string Carrera { get; set; }
+    public string? Carrera { get; set; }
 
     public DateTime? CicloEscolar { get; set; }
+     public string? Estatus { get; set; }
 }

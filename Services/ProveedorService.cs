@@ -29,6 +29,10 @@ public class ProveedorService
     {
         return await _context.Proveedors.CountAsync();
     }
+     public async Task<IEnumerable<Proveedor>> SelectAll()
+    {
+        return await _context.Proveedors.ToListAsync();
+    }
 
     //Metodo para obtener la información por ID.
     public async Task<Proveedor?> GetById(int id) //Rol? = Indica que devuelve un objeto rol o un null
@@ -41,7 +45,6 @@ public class ProveedorService
     {
         _context.Proveedors.Add(newProveedor);
         await _context.SaveChangesAsync();
-
         return newProveedor;
     }
 
@@ -56,6 +59,7 @@ public class ProveedorService
             existingProveedor.NombreEncargado = proveedor.NombreEncargado;
             existingProveedor.Telefono = proveedor.Telefono;
             existingProveedor.Descripcion = proveedor.Descripcion;
+            existingProveedor.Estatus =  proveedor.Estatus;
             await _context.SaveChangesAsync();
         }
     }
@@ -67,7 +71,7 @@ public class ProveedorService
 
         if(proveedorToDelete is not null)
         {
-            _context.Proveedors.Remove(proveedorToDelete);
+            proveedorToDelete.Estatus = "I";
             await _context.SaveChangesAsync();
         }
     }

@@ -21,7 +21,7 @@ public class ComunidadController : ControllerBase
 
     //Metodo para obtener la lista de Comunidades
     [HttpGet("getall")]
-      public async Task<IActionResult> GetAll(int pagina = 1, int elementosPorPagina = 10)
+    public async Task<IActionResult> GetAll(int pagina = 1, int elementosPorPagina = 10)
     {
         var comunidades = await _comunidadService.GetAll(pagina, elementosPorPagina);
 
@@ -42,6 +42,14 @@ public class ComunidadController : ControllerBase
 
         return Ok(resultado);
     }
+
+    [HttpGet("selectall")]
+    public async Task<IEnumerable<Comunidad>> SelectAll()
+    {
+
+        return await _comunidadService.SelectAll();
+    }
+
     [HttpGet("{id}")]
     public async Task<ActionResult<Comunidad>> GetById(int id)
     {
@@ -62,21 +70,27 @@ public class ComunidadController : ControllerBase
     {
         var newComunidad = await _comunidadService.Create(comunidad);
 
-          return Ok(new{status = true, 
-                      message = "La comunidad se creo correctamente"});
+        return Ok(new
+        {
+            status = true,
+            message = "La comunidad se creo correctamente"
+        });
     }
 
     [HttpPut("update/{id}")]
     public async Task<IActionResult> Update(int id, Comunidad comunidad)
     {
-      
+
         var comunidadToUpdate = await _comunidadService.GetById(id);
 
         if (comunidadToUpdate is not null)
         {
             await _comunidadService.Update(id, comunidad);
-              return Ok(new{status = true, 
-                      message = "La comunidad se modificó correctamente"});
+            return Ok(new
+            {
+                status = true,
+                message = "La comunidad se modificó correctamente"
+            });
         }
         else
         {
@@ -92,7 +106,11 @@ public class ComunidadController : ControllerBase
         if (comunidadToDelete is not null)
         {
             await _comunidadService.Delete(id);
-            return Ok();
+            return Ok(new
+            {
+                status = true,
+                message = "La comunidad se eliminó correctamente"
+            });
         }
         else
         {

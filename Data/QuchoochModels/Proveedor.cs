@@ -15,5 +15,7 @@ public partial class Proveedor
 
     public string Descripcion { get; set; } = null!;
 
+    public string? Estatus { get; set; }
+
     public virtual ICollection<OrdenCompra> OrdenCompras { get; set; } = new List<OrdenCompra>();
 }

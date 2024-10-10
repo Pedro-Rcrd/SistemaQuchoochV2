@@ -21,10 +21,10 @@ public class GradoController : ControllerBase
     }
 
     //Metodo para obtener la lista de grados
-    [HttpGet("getall")]
-      public async Task<IEnumerable<Grado>> Get()
+    [HttpGet("selectAll")]
+      public async Task<IEnumerable<Grado>> SelectAll()
     {
-        return await _gradoService.GetAll();
+        return await _gradoService.SelectAll();
     }
 
     [HttpGet("{id}")]

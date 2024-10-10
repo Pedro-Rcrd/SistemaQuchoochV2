@@ -96,9 +96,11 @@ public class EstudianteService
         return await _context.Estudiantes.CountAsync();
     }
 
-    public async Task<EstudianteDto?> GetByIdDto(int id) //Rol? = Indica que devuelve un objeto rol o un null
+    public async Task<EstudianteDto?> Ficha (int codigoEstudiante) //Rol? = Indica que devuelve un objeto rol o un null
     {
-        return await _context.Estudiantes.Where(a => a.CodigoEstudiante == id).Select(a => new EstudianteDto
+        return await _context.Estudiantes
+        .Where(a => a.CodigoEstudiante == codigoEstudiante)
+        .Select(a => new EstudianteDto
         {
             CodigoBecario = a.CodigoBecario,
             CodigoEstudiante = a.CodigoEstudiante,
@@ -117,6 +119,7 @@ public class EstudianteService
             Grado = a.CodigoGradoNavigation != null ? a.CodigoGradoNavigation.NombreGrado : "",
             Carrera = a.CodigoCarreraNavigation != null ? a.CodigoCarreraNavigation.NombreCarrera : "",
             Establecimiento = a.CodigoEstablecimientoNavigation != null ? a.CodigoEstablecimientoNavigation.NombreEstablecimiento : "",
+            ModalidadEstudio = a.CodigoModalidadEstudioNavigation != null ? a.CodigoModalidadEstudioNavigation.NombreModalidadEstudio : "",
             NombrePadre = a.NombrePadre,
             TelefonoPadre = a.TelefonoPadre,
             OficioPadre = a.OficioPadre,
@@ -124,7 +127,7 @@ public class EstudianteService
             TelefonoMadre = a.TelefonoMadre,
             OficioMadre = a.OficioMadre,
             FotoPerfil = a.FotoPerfil,
-            FechaRegistro = a.FechaRegistro
+            FechaRegistro = a.FechaRegistro,
         }).SingleOrDefaultAsync();
     }
 
@@ -172,7 +175,11 @@ public class EstudianteService
             existingEstudiante.NombreMadre = estudiante.NombreMadre;
             existingEstudiante.TelefonoMadre = estudiante.TelefonoMadre;
             existingEstudiante.OficioMadre = estudiante.OficioMadre;
-            existingEstudiante.FotoPerfil = estudiante.FotoPerfil;
+            existingEstudiante.CodigoModalidadEstudio = estudiante.CodigoModalidadEstudio;
+            if (!string.IsNullOrEmpty(estudiante.FotoPerfil))
+            {
+                existingEstudiante.FotoPerfil = estudiante.FotoPerfil;
+            }
             existingEstudiante.FechaRegistro = estudiante.FechaRegistro;
             existingEstudiante.CodigoBecario = estudiante.CodigoBecario;
             await _context.SaveChangesAsync();

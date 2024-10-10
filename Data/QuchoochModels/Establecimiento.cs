@@ -9,6 +9,8 @@ public partial class Establecimiento
 
     public string NombreEstablecimiento { get; set; } = null!;
 
+    public string? Estatus { get; set; }
+
     public virtual ICollection<Estudiante> Estudiantes { get; set; } = new List<Estudiante>();
 
     public virtual ICollection<FichaCalificacion> FichaCalificacions { get; set; } = new List<FichaCalificacion>();

@@ -30,6 +30,13 @@ public class ComunidadService
         return await _context.Comunidads.CountAsync();
     }
 
+       public async Task<IEnumerable<Comunidad>> SelectAll()
+    {
+       // return await _context.Carreras.ToListAsync();
+        return  await _context.Comunidads.ToListAsync();
+    }
+
+
     //Metodo para obtener la información por ID.
     public async Task<Comunidad?> GetById(int id) //Rol? = Indica que devuelve un objeto rol o un null
     {
@@ -53,6 +60,7 @@ public class ComunidadService
         if(existingComunidad is not null)
         {
             existingComunidad.NombreComunidad = comunidad.NombreComunidad;
+            existingComunidad.Estatus = comunidad.Estatus;
             await _context.SaveChangesAsync();
         }
     }
@@ -64,7 +72,7 @@ public class ComunidadService
 
         if(comunidadToDelete is not null)
         {
-            _context.Comunidads.Remove(comunidadToDelete);
+             comunidadToDelete.Estatus = "I";
             await _context.SaveChangesAsync();
         }
     }

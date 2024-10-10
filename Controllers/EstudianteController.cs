@@ -1,81 +1,48 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.IO;
+using System.Threading.Tasks;
 using sistemaQuchooch.Sevices;
-using sistemaQuchooch.Data.QuchoochModels;
-using sistemaQuchooch.Data.DTOs;
 using Microsoft.AspNetCore.Authorization;
-
-
-namespace sistemaQuchooch.Controllers;
-
-
-[ApiController]
+using sistemaQuchooch.Data.QuchoochModels;
+using System.Linq.Expressions;
+using CloudinaryDotNet.Actions;
+[Authorize]
 [Route("api/[controller]")]
+[ApiController]
 public class EstudianteController : ControllerBase
 {
     private readonly FileUploadService _fileUploadService;
     private readonly EstudianteService _estudianteService;
     private readonly ComunidadService _comunidadService;
     private readonly NivelAcademicoService _nivelAcademicoService;
-    private readonly GradoService _gradoService;
-    private readonly CarreraService _carreraService;
-    private readonly EstablecimientoService _establecimientoService;
+     private readonly ConvertirImagenBase64Service _convertirImagenBase64Service;
 
-
-    //Constructor
-    public EstudianteController(EstudianteService service,
+    public EstudianteController(FileUploadService fileUploadService,
+                                EstudianteService estudianteService,
                                 ComunidadService comunidadService,
                                 NivelAcademicoService nivelAcademicoService,
-                                GradoService gradoService,
-                                CarreraService carreraService,
-                                EstablecimientoService establecimientoService,
-                                FileUploadService fileUploadService)
+                                ConvertirImagenBase64Service convertirImagenBase64Service)
     {
-        _estudianteService = service;
+        _fileUploadService = fileUploadService;
+        _estudianteService = estudianteService;
         _comunidadService = comunidadService;
         _nivelAcademicoService = nivelAcademicoService;
-        _gradoService = gradoService;
-        _carreraService = carreraService;
-        _establecimientoService = establecimientoService;
-        _fileUploadService = fileUploadService;
-    }
-
-
-    //Metodo para obtener la lista de Estudiantes
-    [HttpGet("getall")]
-    public async Task<IActionResult> GetAll( int pagina = 1, int elementosPorPagina = 10, int id = 0)
-    {
+        _convertirImagenBase64Service = convertirImagenBase64Service;
         
-        var estudiantes = await _estudianteService.GetAll(pagina, elementosPorPagina, id);
-
-        // Calcula la cantidad total de registros
-        var totalRegistros = await _estudianteService.CantidadTotalRegistros(); // Debes implementar este método en tu servicio
-
-        // Calcula la cantidad total de páginas
-        var totalPaginas = (int)Math.Ceiling((double)totalRegistros / elementosPorPagina);
-
-        // Construye un objeto que incluye la lista de países y la información de paginación
-        var resultado = new
-        {
-            Estudiantes = estudiantes,
-            PaginaActual = pagina,
-            TotalPaginas = totalPaginas,
-            TotalRegistros = totalRegistros
-        };
-
-        return Ok(resultado);
     }
 
     [HttpGet("selectAll")]
-         public async Task<IEnumerable<EstudianteDto>> SelectAll()
+    public async Task<IEnumerable<EstudianteDto>> SelectAll()
     {
         var estudiantes = await _estudianteService.SelectAll();
         return estudiantes;
     }
 
-    [HttpGet("{id}")]
-    public async Task<ActionResult<EstudianteDto>> GetByIdDto(int id)
+    [HttpGet("getbyid/{id}")]
+    public async Task<ActionResult<Estudiante>> GetById(int id)
     {
-        var estudiante = await _estudianteService.GetByIdDto(id);
+        var estudiante = await _estudianteService.GetById(id);
 
         if (estudiante is null)
         {
@@ -85,106 +52,153 @@ public class EstudianteController : ControllerBase
 
         return estudiante;
     }
-    
-     [HttpGet("getbyid/{id}")]
-    public async Task<ActionResult<Estudiante>> GetById(int id)
-    {
-        var estudiante = await _estudianteService.GetById(id);
 
-        if(estudiante is null)
+        [HttpGet("Ficha/{codigoEstudiante}")]
+    public async Task<ActionResult<EstudianteDto>> Ficha(int codigoEstudiante)
+    {
+        var fichaEstudiante = await _estudianteService.Ficha(codigoEstudiante);
+        var urlFotoPerfil = fichaEstudiante.FotoPerfil;
+        string fotoPerfilBase64 = string.Empty;
+         if (urlFotoPerfil != null){
+            fotoPerfilBase64 = await _convertirImagenBase64Service.ConvertirImagenBase64(urlFotoPerfil);
+            if(fotoPerfilBase64 != null){
+                fichaEstudiante.FotoPerfil = fotoPerfilBase64;
+            }
+         }
+        if (fichaEstudiante is null)
         {
             //Es un método para mostrar error explicito
-            return EstudianteNotFound(id);
+            return EstudianteNotFound(codigoEstudiante);
         }
 
-        return estudiante;
+        return fichaEstudiante;
     }
-
-    //Solo el administrador puede crear estudiantes
 
     [HttpPost("create")]
-    public async Task<IActionResult> Create(Estudiante estudiante)
+    public async Task<IActionResult> CrearEstudiante([FromForm] EstudianteInputModel model)
     {
-        string validationResult = await ValidateStudent(estudiante);
-
-        if (!validationResult.Equals("valid"))
-        {
-            return BadRequest(new
-            {
-                status = false,
-                message = validationResult
-            });
-        }
-
-        await _estudianteService.Create(estudiante);
-
-        return Ok(new
-        {
-            status = true,
-            message = "Estudiante creado correctamente"
-        });
-        //CreatedAtAction(nameof(GetById), new {id = newEstudiante.CodigoEstudiante}, newEstudiante);
-    }
-
-    [HttpPost("createImg")]
-    public async Task<IActionResult> CreateImg([FromForm] EstudianteDtoInput estudianteDtoInput, [FromForm] IFormFile imagen)
-    {
-        // Accede a la imagen con 'imagen' en lugar de 'estudianteDtoInput.imagen'
-        Console.WriteLine($"El valor de 'apellidoEstudiante' es: {estudianteDtoInput.ApellidoEstudiante}");
-        Console.WriteLine($"El tipo de archivo es: {imagen.ContentType}");
-
         try
         {
-            // Tu lógica de procesamiento aquí
-            // Puedes usar 'imagen' para guardar o procesar la imagen como desees
-
-            return Ok(new
+            if (model == null || model.ImagenEstudiante == null)
             {
-                status = true,
-                message = "Estudiante creado correctamente",
-            });
+                return BadRequest(new { message = "Los datos del estudiante son inválidos." });
+            }
+
+            var file = Request.Form.Files[0];
+            var img = model.ImagenEstudiante.FileName;
+            string folder = "Becarios";
+            if (img is null)
+            {
+                return BadRequest("La imagen no se cargó correctamente");
+            }
+            var imageUrl = await _fileUploadService.UploadFileAsync(file, folder);
+
+            //Guardar datos del estudiante
+            Estudiante estudiante = new Estudiante
+            {
+                CodigoComunidad = model.CodigoComunidad,
+                CodigoNivelAcademico = model.CodigoNivelAcademico,
+                CodigoGrado = model.CodigoGrado,
+                CodigoCarrera = model.CodigoCarrera,
+                CodigoEstablecimiento = model.CodigoEstablecimiento,
+                NombreEstudiante = model.NombreEstudiante,
+                ApellidoEstudiante = model.ApellidoEstudiante,
+                FechaNacimieto = model.FechaNacimiento,
+                Genero = model.Genero,
+                Estado = model.Estado,
+                TelefonoEstudiante = model.TelefonoEstudiante,
+                Email = model.Email,
+                Sector = model.Sector,
+                NumeroCasa = model.NumeroCasa,
+                Descripcion = model.Descripcion,
+                NombrePadre = model.NombrePadre,
+                TelefonoPadre = model.TelefonoPadre,
+                OficioPadre = model.OficioPadre,
+                NombreMadre = model.NombreMadre,
+                TelefonoMadre = model.TelefonoMadre,
+                OficioMadre = model.OficioMadre,
+                FotoPerfil = imageUrl,
+                FechaRegistro = model.FechaRegistro,
+                CodigoBecario = model.CodigoBecario,
+                 CodigoModalidadEstudio = model.CodigoModalidadEstudio
+            };
+
+            await _estudianteService.Create(estudiante);
+
+            return Ok(new { status = true, message = "El estudiante fue creado correctamente." });
+
         }
-        catch (ArgumentException ex)
+        catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return StatusCode(500, new { message = $"Se produjo un error al crear el estudiante: {ex.Message}" });
         }
     }
 
-    [HttpPost("upload")]
-    public async Task<IActionResult> UploadImage(IFormFile file)
-    {
-        if (file == null || file.Length == 0)
-            return BadRequest("No se proporcionó ningún archivo o el archivo está vacío.");
-
-        // Verificar la extensión o el tipo de archivo si es necesario
-
-        //var uploadPath = Path.Combine("ruta/de/almacenamiento", file.FileName);
-
-        // using (var stream = new FileStream(uploadPath, FileMode.Create))
-        //{
-        //   await file.CopyToAsync(stream);
-        //}
-
-        return Ok("Imagen cargada con éxito.");
-    }
-
-
-
-    //Solo el administrador puede actualizar Estudiantes
-    //[Authorize(Policy = "Administrador")]
+    //METODO PARA EDITAR
     [HttpPut("update/{id}")]
-    public async Task<IActionResult> Update(int id, Estudiante estudiante)
+    public async Task<IActionResult> EditarEstudiante(int id, [FromForm] EstudianteInputModel model)
     {
+        string imageUrl = string.Empty;
+        string folder = "Becarios";
+
         var estudianteToUpdate = await _estudianteService.GetById(id);
+        if (estudianteToUpdate == null)
+        {
+            return BadRequest(new { message = $"El estudiante con el codigo {id} no existe." });
+        }
+
+        if (model.ImagenEstudiante != null)
+        {
+            Console.WriteLine("Se cargó la imagen");
+            //Capturando archivo img
+            var file = Request.Form.Files[0];
+            //Capturando el nombre del archivo
+            var img = model.ImagenEstudiante.FileName;
+            imageUrl = await _fileUploadService.UploadFileAsync(file, folder);
+        }
+
+        //Guardar datos del estudiante
+        Estudiante estudiante = new Estudiante
+        {
+            CodigoComunidad = model.CodigoComunidad,
+            CodigoNivelAcademico = model.CodigoNivelAcademico,
+            CodigoGrado = model.CodigoGrado,
+            CodigoCarrera = model.CodigoCarrera,
+            CodigoEstablecimiento = model.CodigoEstablecimiento,
+            NombreEstudiante = model.NombreEstudiante,
+            ApellidoEstudiante = model.ApellidoEstudiante,
+            FechaNacimieto = model.FechaNacimiento,
+            Genero = model.Genero,
+            Estado = model.Estado,
+            TelefonoEstudiante = model.TelefonoEstudiante,
+            Email = model.Email,
+            Sector = model.Sector,
+            NumeroCasa = model.NumeroCasa,
+            Descripcion = model.Descripcion,
+            NombrePadre = model.NombrePadre,
+            TelefonoPadre = model.TelefonoPadre,
+            OficioPadre = model.OficioPadre,
+            NombreMadre = model.NombreMadre,
+            TelefonoMadre = model.TelefonoMadre,
+            OficioMadre = model.OficioMadre,
+            FotoPerfil = imageUrl,
+            FechaRegistro = model.FechaRegistro,
+            CodigoBecario = model.CodigoBecario,
+            CodigoModalidadEstudio = model.CodigoModalidadEstudio
+        };
 
         if (estudianteToUpdate is not null)
         {
+            Console.WriteLine("Se encontró el estudiante a actualizar");
             string validationResult = await ValidateStudent(estudiante);
             if (!validationResult.Equals("valid"))
             {
+                Console.WriteLine("La validación del estudiante no es valid");
                 return BadRequest(new { message = validationResult });
             }
+            Console.WriteLine("Proceso de actualizar");
             await _estudianteService.Update(id, estudiante);
+            
             return Ok(new
             {
                 status = true,
@@ -193,34 +207,29 @@ public class EstudianteController : ControllerBase
         }
         else
         {
+            Console.WriteLine("No se encontró el ID del estudiante ");
             return EstudianteNotFound(id);
         }
+
+
     }
 
-
-    //Solo el administrador puede eliminar Estudiantes
-    //[Authorize(Policy = "Administrador")]
-    [HttpDelete("delete/{id}")]
-    public async Task<IActionResult> Delete(int id)
+    [HttpPut("updateEst/{id}")]
+    public async Task<IActionResult> EditarEstudianteSinImagen(int id, [FromBody] EstudianteInputModel model)
     {
-        var estudianteToDelete = await _estudianteService.GetById(id);
+        // Tu lógica para manejar la edición del estudiante aquí sin la imagen.
+        var nombreEstudiante = model.NombreEstudiante;
+        Console.WriteLine($"Que viene aquí {nombreEstudiante}");
+        // Puedes utilizar este método cuando no necesitas incluir una imagen.
 
-        if (estudianteToDelete is not null)
-        {
-            await _estudianteService.Delete(id);
-            return Ok();
-        }
-        else
-        {
-            return EstudianteNotFound(id);
-        }
+        return Ok("Estudiante editado con éxito (sin imagen)");
     }
 
-    //Definir un método para indicar el mensaje del NotFound
     public NotFoundObjectResult EstudianteNotFound(int id)
     {
         return NotFound(new { message = $"El Estudiante con el ID {id} no existe" });
     }
+
 
     public async Task<string> ValidateStudent(Estudiante estudiante)
     {
@@ -240,4 +249,41 @@ public class EstudianteController : ControllerBase
         }
         return result;
     }
+}
+
+public class EstudianteInputModel
+{
+    public string? CodigoBecario { get; set; }
+    public int CodigoComunidad { get; set; }
+    public int? CodigoNivelAcademico { get; set; }
+    public int? CodigoGrado { get; set; }
+    public int? CodigoCarrera { get; set; }
+     public int? CodigoModalidadEstudio { get; set; }
+    public int? CodigoEstablecimiento { get; set; }
+    public string NombreEstudiante { get; set; } = null!;
+    public string ApellidoEstudiante { get; set; } = null!;
+    public DateTime FechaNacimiento { get; set; }
+    public string Genero { get; set; } = null!;
+    public string Estado { get; set; } = null!;
+    public string? TelefonoEstudiante { get; set; }
+    public string? Email { get; set; }
+
+    public byte? Sector { get; set; }
+
+    public string? NumeroCasa { get; set; }
+
+    public string? Descripcion { get; set; }
+    public string NombrePadre { get; set; } = null!;
+
+    public string? TelefonoPadre { get; set; }
+
+    public string? OficioPadre { get; set; }
+
+    public string NombreMadre { get; set; } = null!;
+
+    public string? TelefonoMadre { get; set; }
+
+    public string? OficioMadre { get; set; }
+    public IFormFile? ImagenEstudiante { get; set; }
+    public DateTime? FechaRegistro { get; set; }
 }

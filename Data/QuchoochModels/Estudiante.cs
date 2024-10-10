@@ -55,6 +55,8 @@ public partial class Estudiante
 
     public string? CodigoBecario { get; set; }
 
+    public int? CodigoModalidadEstudio { get; set; }
+
     public virtual Carrera? CodigoCarreraNavigation { get; set; }
 
     public virtual Comunidad? CodigoComunidadNavigation { get; set; }
@@ -62,6 +64,8 @@ public partial class Estudiante
     public virtual Establecimiento? CodigoEstablecimientoNavigation { get; set; }
 
     public virtual Grado? CodigoGradoNavigation { get; set; }
+
+    public virtual ModalidadEstudio? CodigoModalidadEstudioNavigation { get; set; }
 
     public virtual NivelAcademico? CodigoNivelAcademicoNavigation { get; set; }
 

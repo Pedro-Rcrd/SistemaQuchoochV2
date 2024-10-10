@@ -9,5 +9,7 @@ public partial class Pai
 
     public string Nombre { get; set; } = null!;
 
+    public string? Estatus { get; set; }
+
     public virtual ICollection<Patrocinador> Patrocinadors { get; set; } = new List<Patrocinador>();
 }

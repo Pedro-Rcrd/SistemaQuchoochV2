@@ -2,19 +2,28 @@ using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Threading.Tasks;
 
 public class FileUploadService
 {
     private readonly Cloudinary _cloudinary;
+    private readonly IConfiguration _configuration;
 
-    public FileUploadService()
+    public FileUploadService(IConfiguration configuration)
     {
-        string cloudName = "ddxnadexi";
-        string apiKey = "822983787533177";
-        string apiSecret = "kXxNIEGQi2SwV71mmtT5XGfmiso";
-        var account = new Account(cloudName, apiKey, apiSecret);
+         _configuration = configuration;
+        //string cloudName = "ddxnadexi";
+        //string apiKey = "822983787533177";
+        //string apiSecret = "kXxNIEGQi2SwV71mmtT5XGfmiso";
+        //var account = new Account(cloudName, apiKey, apiSecret);
+        var cloudinarySettings = _configuration.GetSection("Cloudinary");
+        var account = new Account(
+            cloudinarySettings["CloudName"],
+            cloudinarySettings["ApiKey"],
+            cloudinarySettings["ApiSecret"]
+        );
         _cloudinary = new Cloudinary(account);
     }
 

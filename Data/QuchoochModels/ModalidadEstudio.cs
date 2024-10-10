@@ -3,11 +3,11 @@ using System.Collections.Generic;
 
 namespace sistemaQuchooch.Data.QuchoochModels;
 
-public partial class Grado
+public partial class ModalidadEstudio
 {
-    public int CodigoGrado { get; set; }
+    public int CodigoModalidadEstudio { get; set; }
 
-    public string NombreGrado { get; set; } = null!;
+    public string? NombreModalidadEstudio { get; set; }
 
     public string? Estatus { get; set; }
 

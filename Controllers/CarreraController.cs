@@ -44,6 +44,14 @@ public class CarreraController : ControllerBase
         return Ok(resultado);
     }
 
+     [HttpGet("selectall")]
+    public async Task<IEnumerable<CarreraDto>> SelectAll()
+    {
+
+        return await _carreraService.SelectAll();
+    }
+
+
     [HttpGet("{id}")]
     public async Task<ActionResult<CarreraDto>> GetByIdDto(int id)
     {
@@ -92,7 +100,8 @@ public class CarreraController : ControllerBase
         if(carreraToDelete is not null)
         {
             await _carreraService.Delete(id);
-            return Ok();
+           return Ok(new{status = true, 
+                      message = "La carrera se eliminó correctamente"});
         }
         else
         {
