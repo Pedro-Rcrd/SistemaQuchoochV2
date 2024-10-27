@@ -6,8 +6,6 @@ namespace sistemaQuchooch.Data.QuchoochModels;
 
 public partial class GastoDto
 {
-    public int CodigoGasto { get; set; }
-
     public int CodigoEstudiante { get; set; }
 
     public DateTime? FechaEntrega { get; set; }

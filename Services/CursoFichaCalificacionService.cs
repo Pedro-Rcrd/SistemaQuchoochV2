@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using sistemaQuchooch.Data;
 using sistemaQuchooch.Data.QuchoochModels;
+using sistemaQuchooch.Data.DTOs;
 
 
 namespace sistemaQuchooch.Sevices;
@@ -62,6 +63,25 @@ public class CursoFichaCalificacionService
 
         return cursos;
     }
+    public async Task<List<CursosFichaEscolarDto>> ObtenerTodosLosCursosPorFicha (int codigoFichaCalificacion)
+    {
+        var bloques = await _context.FichaCalificacionDetalles
+            .Where(f => f.CodigoFichaCalificacion == codigoFichaCalificacion && f.Estatus == "A")
+            .Select(f => (int?)f.CodigoFichaCalificacionDetalle)
+            .ToListAsync();
+
+        var cursos = await _context.CursoFichaCalificacions
+        .Where(a => bloques.Contains(a.CodigoFichaCalificacionDetalle) && a.Estatus == "A")
+        .OrderByDescending(a => a.CodigoFichaCalificacionDetalleNavigation.Bloque)
+        .Select(a => new CursosFichaEscolarDto{
+            Bloque = a.CodigoFichaCalificacionDetalleNavigation.Bloque,
+            Curso = a.CodigoCursoNavigation.NombreCurso,
+            Nota = a.Nota,
+            Promedio = a.CodigoFichaCalificacionDetalleNavigation.Promedio
+        })
+        .ToListAsync();
+        return cursos;
+    }
 
 
 
@@ -82,7 +102,6 @@ public class CursoFichaCalificacionService
     {
         _context.CursoFichaCalificacions.Add(newCursoFichaCalificacion);
         await _context.SaveChangesAsync();
-
         return newCursoFichaCalificacion;
     }
 

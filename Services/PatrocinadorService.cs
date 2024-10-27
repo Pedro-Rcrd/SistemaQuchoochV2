@@ -47,6 +47,31 @@ public class PatrocinadorService
       public async Task<IEnumerable<PatrocinadorOutAllDto>> SelectAll()
     {
         var Patrocinadors = await _context.Patrocinadors
+        .OrderByDescending(a => a.CodigoPatrocinador)
+        .Select(e => new PatrocinadorOutAllDto
+        {
+            CodigoPatrocinador = e.CodigoPatrocinador,
+            CodigoPais = e.CodigoPais,
+            NombrePais = e.CodigoPaisNavigation != null ? e.CodigoPaisNavigation.Nombre : "",
+            NombrePatrocinador = e.NombrePatrocinador,
+            ApellidoPatrocinador = e.ApellidoPatrocinador,
+            Profesion = e.Profesion,
+            Estado = e.Estado,
+            FechaNacimiento = e.FechaNacimiento,
+            FechaCreacion = e.FechaCreacion,
+            FotoPerfil = e.FotoPerfil
+
+        })
+        .ToListAsync();
+
+        return Patrocinadors;
+    }
+    //Metodo para buscar patrocinador
+      public async Task<IEnumerable<PatrocinadorOutAllDto>> PatrocinadoresPorRangoFecha(RangoFecha model)
+    {
+        var Patrocinadors = await _context.Patrocinadors
+        .Where(a => a.FechaCreacion >= model.FechaInicio && a.FechaCreacion <= model.FechaFin)
+        .OrderByDescending(a => a.CodigoPatrocinador)
         .Select(e => new PatrocinadorOutAllDto
         {
             CodigoPatrocinador = e.CodigoPatrocinador,
@@ -104,22 +129,12 @@ public class PatrocinadorService
         return newPatrocinador;
     }
 
-    //Método para actualizar estado
-    public async Task UpdateStatus(int id)
-    {
-        var existingPatrocinador = await GetById(id);
-
-        if (existingPatrocinador is not null)
-        {
-            existingPatrocinador.Estado = "I";
-            }
-            await _context.SaveChangesAsync();
-    }
+  
 
     //Metodo para actualizar datos del Patrocinador
-    public async Task Update(int id, Patrocinador patrocinador)
+    public async Task Update(int codigoPatrocinador, Patrocinador patrocinador)
     {
-        var existingPatrocinador = await GetById(id);
+        var existingPatrocinador = await GetById(codigoPatrocinador);
 
         if (existingPatrocinador is not null)
         {
@@ -138,14 +153,15 @@ public class PatrocinadorService
     }
 
     //Metodo para elminar un rol
-    public async Task Delete(int id)
+      //Método para actualizar estado
+    public async Task Delete(int codigoPatrocinador)
     {
-        var patrocinadorToDelete = await GetById(id);
+        var existingPatrocinador = await GetById(codigoPatrocinador);
 
-        if (patrocinadorToDelete is not null)
+        if (existingPatrocinador is not null)
         {
-            _context.Patrocinadors.Remove(patrocinadorToDelete);
+            existingPatrocinador.Estado = "I";
+            }
             await _context.SaveChangesAsync();
-        }
     }
 }

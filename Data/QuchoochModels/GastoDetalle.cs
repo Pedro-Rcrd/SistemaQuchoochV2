@@ -15,5 +15,7 @@ public partial class GastoDetalle
 
     public decimal? Precio { get; set; }
 
+    public string? Estatus { get; set; }
+
     public virtual Gasto? CodigoGastoNavigation { get; set; }
 }

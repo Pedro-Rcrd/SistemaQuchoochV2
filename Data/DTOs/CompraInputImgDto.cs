@@ -25,6 +25,6 @@ public partial class CompraInputImgDto
 
     public IFormFile? ImgEstudiante { get; set; }
 
-     public List<CompraDetalleInputDto>? DetallesCompra { get; set; }
+     public List<CompraDetalle>? Productos { get; set; }
 
 }

@@ -32,4 +32,6 @@ public partial class GastoInputDto
     public IFormFile? ImgComprobante { get; set; }
 
     public IFormFile? ImgEstudiante { get; set; }
+
+    public List<GastoDetalle> Productos {get; set;} = new List<GastoDetalle>();
 }

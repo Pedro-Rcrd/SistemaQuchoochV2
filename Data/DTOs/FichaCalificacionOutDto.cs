@@ -23,4 +23,5 @@ public partial class FichaCalificacionOutDto
 
     public DateTime? CicloEscolar { get; set; }
      public string? Estatus { get; set; }
+     public string? ModalidadEstudio { get; set; }
 }

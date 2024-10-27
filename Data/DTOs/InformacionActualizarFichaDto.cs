@@ -44,5 +44,6 @@ public class MateriaDto
     public string NombreCurso { get; set; }
     public string Nota { get; set; }
     public int CodigoCursoFichaCalificacion { get; set; }
+      public int CodigoCurso { get; set; }
 }
 

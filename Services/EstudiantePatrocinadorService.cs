@@ -60,6 +60,39 @@ public class EstudiantePatrocinadorService
 
         return patrocinadores;
     }
+    public async Task<IEnumerable<ListaEstudiantePatrocinador>> ObtenerListaEstudiantes()
+    {
+        var estudiantes = await _context.EstudiantePatrocinadors
+        .Where(a => a.Estatus == "A")
+        .GroupBy(a => a.CodigoEstudiante) // Agrupar por CódigoEstudiante
+        .Select(g => new ListaEstudiantePatrocinador
+        {
+            CodigoEstudiante = g.Key,
+            CodigoBecario = g.First().CodigoEstudianteNavigation.CodigoBecario,
+            NombreEstudiante = g.First().CodigoEstudianteNavigation.NombreEstudiante,
+            ApellidoEstudiante = g.First().CodigoEstudianteNavigation.ApellidoEstudiante,
+            CantidadPatrocinadores = g.Count(), // Contar el número de patrocinadores
+            Estatus = g.First().Estatus
+        })
+        .ToListAsync();
+        return estudiantes;
+    }
+    public async Task<IEnumerable<PatrocinadoresDeEstudiante>> ObtenerListaPatrocinadores(int codigoEstudiante)
+    {
+        var patrocinadores = await _context.EstudiantePatrocinadors
+        .Where(a => a.CodigoEstudiante == codigoEstudiante && a.Estatus == "A")
+        .Select(a => new PatrocinadoresDeEstudiante 
+        {
+            CodigoEstudiantePatrocinador = a.CodigoEstudiantePatrocinador,
+            CodigoBecario = a.CodigoEstudianteNavigation.CodigoBecario,
+            Estudiante = a.CodigoEstudianteNavigation.NombreEstudiante + " " + a.CodigoEstudianteNavigation.ApellidoEstudiante,
+            NombrePatrocinador = a.CodigoPatrocinadorNavigation.NombrePatrocinador,
+            ApellidoPatrocinador = a.CodigoPatrocinadorNavigation.ApellidoPatrocinador,
+            Pais = a.CodigoPatrocinadorNavigation.CodigoPaisNavigation.Nombre,
+        })
+        .ToListAsync();
+        return patrocinadores;
+    }
 
     public async Task<int> CantidadTotalRegistros()
     {
@@ -95,6 +128,12 @@ public class EstudiantePatrocinadorService
         return newEstudiantePatrocinador;
     }
 
+    public async Task CreateMultiple(List<EstudiantePatrocinador> estudiantesPatrocinadores)
+{
+    _context.EstudiantePatrocinadors.AddRange(estudiantesPatrocinadores);
+    await _context.SaveChangesAsync();
+}
+
     //Metodo para actualizar datos del Patrocinador
     public async Task Update(int id, EstudiantePatrocinador estudiantePatrocinador)
     {
@@ -111,11 +150,11 @@ public class EstudiantePatrocinadorService
     //Metodo para elminar un rol
     public async Task Delete(int id)
     {
-        var estPatrocinadorToDelete = await GetById(id);
+        var estudiantePatrocinadorToDelete = await GetById(id);
 
-        if (estPatrocinadorToDelete is not null)
+        if (estudiantePatrocinadorToDelete is not null)
         {
-            _context.EstudiantePatrocinadors.Remove(estPatrocinadorToDelete);
+           estudiantePatrocinadorToDelete.Estatus = "I";
             await _context.SaveChangesAsync();
         }
     }

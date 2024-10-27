@@ -77,6 +77,44 @@ public class FichaCalificacionController : ControllerBase
         return fichas;
     }
 
+    //Lista completa de fichas de calificaciones
+    [HttpGet("historial/{codigoBecario}")]
+    public async Task<IEnumerable<FichaCalificacionOutDto>> FichaPorEstudiante(string codigoBecario)
+    {
+        var codigoEstudiante = await _estudianteService.BuscarCodigoEstudiantePorBecario(codigoBecario);
+     
+        var fichas = await _fichaCalificacionService.FichasPorEstudiante(Convert.ToInt32(codigoEstudiante)); //La converción devolverá un 0 si el valor es nulo
+        return fichas;
+    }
+    
+    [HttpGet("buscarPorRangoFecha")]
+    public async Task<IEnumerable<FichaCalificacionOutDto>> BuscarPorRangoFecha([FromQuery] DateTime fechaInicio, [FromQuery] DateTime fechaFin)
+    {
+        var model = new RangoFecha { FechaInicio = fechaInicio, FechaFin = fechaFin };
+        var fichas = await _fichaCalificacionService.FichasPorRangoFecha(model);
+        return fichas;
+    }
+
+    [HttpGet("promediosGenerales/{cantidad}")]
+    public async Task<IEnumerable<PromedioEstudianteDto>> PromediosGenerales (int cantidad)
+    {
+        var promediosGenerales = await _fichaCalificacionService.ObtenerPromediosGenerales(cantidad);
+        return promediosGenerales;
+    }
+    [HttpGet("promedioPorCurso/{codigoFichaCalificacion}")]
+    public async Task<IEnumerable<PromedioCursosPorFicha>> PromedioPorCursoFicha (int codigoFichaCalificacion)
+    {
+        var promediosCursos = await _fichaCalificacionService.ObtenerPromedioPorCursos(codigoFichaCalificacion);
+        return promediosCursos;
+    }
+
+    [HttpGet("cursos/{codigoFicha}")]
+    public async Task<IEnumerable<CursosFichaEscolarDto>> ObtenerListaCursos(int codigoFicha)
+    {
+        var fichas = await _cursoFichaCalificacionService.ObtenerTodosLosCursosPorFicha(codigoFicha);
+        return fichas;
+    }
+
 
     [HttpGet("{id}")]
     public async Task<ActionResult<FichaCalificacion>> GetById(int id)
@@ -318,7 +356,6 @@ public class FichaCalificacionController : ControllerBase
                 return BadRequest("No hay cursos para guardar...");
             }
 
-
             var imgEstudiante = model.ImgEstudiante;
             var imgFicha = model.ImgFicha;
             var imgCarta = model.ImgCarta;
@@ -330,20 +367,29 @@ public class FichaCalificacionController : ControllerBase
             //Cargando imagenes uno por uno con validaciones
             if (imgEstudiante != null)
             {
-                var fileEstudiante = Request.Form.Files[0];
-                imageUrlEstudiante = await _fileUploadService.UploadFileAsync(fileEstudiante, folder);
+                var fileEstudiante = Request.Form.Files.FirstOrDefault(f => f.Name == nameof(model.ImgEstudiante));
+                if (fileEstudiante != null)
+                {
+                    imageUrlEstudiante = await _fileUploadService.UploadFileAsync(fileEstudiante, folder);
+                }
             }
 
             if (imgFicha != null)
             {
-                var fileFicha = Request.Form.Files[1];
-                imageUrlFicha = await _fileUploadService.UploadFileAsync(fileFicha, folder);
+                var fileFicha = Request.Form.Files.FirstOrDefault(f => f.Name == nameof(model.ImgFicha));
+                if (fileFicha != null)
+                {
+                    imageUrlFicha = await _fileUploadService.UploadFileAsync(fileFicha, folder);
+                }
             }
 
             if (imgCarta != null)
             {
-                var fileCarta = Request.Form.Files[2];
-                imageUrlCarta = await _fileUploadService.UploadFileAsync(fileCarta, folder);
+                var fileCarta = Request.Form.Files.FirstOrDefault(f => f.Name == nameof(model.ImgCarta));
+                if (fileCarta != null)
+                {
+                    imageUrlCarta = await _fileUploadService.UploadFileAsync(fileCarta, folder);
+                }
             }
 
             //Guardando datos de la ficha
@@ -361,6 +407,7 @@ public class FichaCalificacionController : ControllerBase
             };
 
             var newFichaCalificacion = await _fichaCalificacionService.Create(fichaCalificacion);
+
             //Obteniendo el codigo de la ficha insertada
             int codigoFichaCalificacionInsertado = newFichaCalificacion.CodigoFichaCalificacion;
 
@@ -410,11 +457,67 @@ public class FichaCalificacionController : ControllerBase
 
             await _fichaCalificacionService.UpdatePromedio(promedioNotas, codigoPromedio, codigoFichaDetalleInsertado);
 
+            //Actualizar datos del perfil de estudiante
+             //actualizar datos en estudiante
+            Estudiante estudiante = new Estudiante(){
+                CodigoNivelAcademico = model.CodigoNivelAcademico,
+                CodigoGrado = model.CodigoGrado,
+                CodigoCarrera = model.CodigoCarrera,
+                CodigoEstablecimiento = model.CodigoEstablecimiento,
+                CodigoModalidadEstudio = model.CodigoModalidadEstudio
+            };
+            
+            await _fichaCalificacionService.ActualizarPerfilEstudiante(model.CodigoEstudiante ,estudiante);
+
             return Ok(new { status = true, message = "La ficha de calificación fue creado correctamente." });
         }
         catch
         {
             return BadRequest("Se producjo un error al intentar guardar la ficha de calificación");
+
+        }
+
+    }
+    //CREAR FICHA CON IMÁGENES
+    [HttpPut("actualizarFicha/{codigoFichaCalificacion}")]
+    public async Task<IActionResult> ActualizarFicha(int codigoFichaCalificacion, FichaInputDto fichaInput)
+    {
+        try
+        {
+            var fichaCalificacionToUpdate = await _fichaCalificacionService.GetById(codigoFichaCalificacion);
+            FichaCalificacion fichaCalificacion = new FichaCalificacion()
+            {
+                CodigoEstudiante = fichaInput.CodigoEstudiante,
+                CodigoEstablecimiento = fichaInput.CodigoEstablecimiento,
+                CodigoNivelAcademico = fichaInput.CodigoNivelAcademico,
+                CodigoGrado = fichaInput.CodigoGrado,
+                CicloEscolar = fichaInput.CicloEscolar,
+                FechaRegistro = fichaInput.FechaRegistro,
+                CodigoModalidadEstudio = fichaInput.CodigoModalidadEstudio,
+                Estatus = fichaInput.Estatus
+            };
+
+            if (fichaInput.CodigoCarrera != 0 && fichaInput.CodigoCarrera.HasValue)
+            {
+                fichaCalificacion.CodigoCarrera = fichaInput.CodigoCarrera;
+            }
+
+            if (fichaCalificacionToUpdate is not null)
+            {
+                //Guardando datos de la ficha
+                var updateFichaCalificacion = await _fichaCalificacionService.UpdateFicha(codigoFichaCalificacion, fichaCalificacion);
+
+                return Ok(new { status = true, message = "La ficha de calificación fue actualizado correctamente." });
+            }
+            else
+            {
+                return FichaCalificacionNotFound(codigoFichaCalificacion);
+            }
+
+        }
+        catch
+        {
+            return BadRequest("Se produjo un error al intentar actualizar la ficha de calificación");
 
         }
 
@@ -451,20 +554,29 @@ public class FichaCalificacionController : ControllerBase
             //Cargando imagenes uno por uno con validaciones
             if (imgEstudiante != null)
             {
-                var fileEstudiante = Request.Form.Files[0];
-                imageUrlEstudiante = await _fileUploadService.UploadFileAsync(fileEstudiante, folder);
+                var fileEstudiante = Request.Form.Files.FirstOrDefault(f => f.Name == nameof(model.ImgEstudiante));
+                if (fileEstudiante != null)
+                {
+                    imageUrlEstudiante = await _fileUploadService.UploadFileAsync(fileEstudiante, folder);
+                }
             }
 
             if (imgFicha != null)
             {
-                var fileFicha = Request.Form.Files[1];
-                imageUrlFicha = await _fileUploadService.UploadFileAsync(fileFicha, folder);
+                var fileFicha = Request.Form.Files.FirstOrDefault(f => f.Name == nameof(model.ImgFicha));
+                if (fileFicha != null)
+                {
+                    imageUrlFicha = await _fileUploadService.UploadFileAsync(fileFicha, folder);
+                }
             }
 
             if (imgCarta != null)
             {
-                var fileCarta = Request.Form.Files[2];
-                imageUrlCarta = await _fileUploadService.UploadFileAsync(fileCarta, folder);
+                var fileCarta = Request.Form.Files.FirstOrDefault(f => f.Name == nameof(model.ImgCarta));
+                if (fileCarta != null)
+                {
+                    imageUrlCarta = await _fileUploadService.UploadFileAsync(fileCarta, folder);
+                }
             }
 
             //Guardando datos de detalle de evaluación
@@ -523,15 +635,111 @@ public class FichaCalificacionController : ControllerBase
 
     }
 
+    [HttpPut("actualizarImagenesBloque/{codigoFichaCalificacionDetalle}")]
+    public async Task<IActionResult> ActualizarImagenesBloque(int codigoFichaCalificacionDetalle, [FromForm] ImagenesBloque model)
+    {
+        try
+        {
+            if (model == null)
+            {
+                return BadRequest("Los datos no son inválidos.");
+            }
+            var imgEstudiante = model.ImgEstudiante;
+            var imgFicha = model.ImgFicha;
+            var imgCarta = model.ImgCarta;
+            string folder = "FichasCalificaciones";
+            string imageUrlEstudiante = string.Empty;
+            string imageUrlFicha = string.Empty;
+            string imageUrlCarta = string.Empty;
+
+            //Cargando imagenes uno por uno con validaciones
+            if (imgEstudiante != null)
+            {
+                var fileEstudiante = Request.Form.Files.FirstOrDefault(f => f.Name == nameof(model.ImgEstudiante));
+                if (fileEstudiante != null)
+                {
+                    imageUrlEstudiante = await _fileUploadService.UploadFileAsync(fileEstudiante, folder);
+                }
+            }
+
+            if (imgFicha != null)
+            {
+                var fileFicha = Request.Form.Files.FirstOrDefault(f => f.Name == nameof(model.ImgFicha));
+                if (fileFicha != null)
+                {
+                    imageUrlFicha = await _fileUploadService.UploadFileAsync(fileFicha, folder);
+                }
+            }
+
+            if (imgCarta != null)
+            {
+                var fileCarta = Request.Form.Files.FirstOrDefault(f => f.Name == nameof(model.ImgCarta));
+                if (fileCarta != null)
+                {
+                    imageUrlCarta = await _fileUploadService.UploadFileAsync(fileCarta, folder);
+                }
+            }
+
+            FichaCalificacionDetalle fichaCalificacionDetalle = new FichaCalificacionDetalle()
+            {
+                ImgEstudiante = imageUrlEstudiante,
+                ImgFichaCalificacion = imageUrlFicha,
+                ImgCarta = imageUrlCarta,
+            };
+
+            await _fichaCalificacionDetalleService.UpdateImagenes(codigoFichaCalificacionDetalle, fichaCalificacionDetalle);
+
+            return Ok(new { status = true, message = "Las imágnes se han actualizado correctamente." });
+        }
+        catch
+        {
+            return BadRequest("Hubo un error al actualizar las imágenes");
+        }
+    }
 
     //Aquí se crea otro curso y será asignado al bloque seleccionado
-    [HttpPost("asignarcurso")]
+    [HttpPost("asignarNuevocurso")]
     public async Task<IActionResult> AsignarNuevosCursosBloques(CursoFichaCalificacion cursoFichaCalificacion)
     {
-        Console.WriteLine("Este es el método para asignar nuevos cursos");
+        try
+        {
+            int contador = 0;
+            int sumaDeNotas = 0;
+            int promedioNotas = 0;
 
-        await _cursoFichaCalificacionService.Create(cursoFichaCalificacion);
-        return Ok("Cursos asignados con éxito");
+            var nuevoCursoAsignado = await _cursoFichaCalificacionService.Create(cursoFichaCalificacion);
+            int codigoFichaDetalle = nuevoCursoAsignado.CodigoFichaCalificacionDetalle ?? 0;
+            if (codigoFichaDetalle == 0)
+            {
+                return BadRequest(new { status = false, message = "Hubo un eror al asignar el nuevo curso." });
+            }
+            //Actualizar promedio
+            var cursos = await _cursoFichaCalificacionService.ObtenerCursosProBloque(codigoFichaDetalle);
+            foreach (var curso in cursos)
+            {
+                sumaDeNotas += (int)curso.Nota;
+                contador++;
+            }
+            promedioNotas = sumaDeNotas / contador;
+            //Guardar promedio y codigoPromedio
+            var rangosDePromedios = await _fichaCalificacionService.RangosDePromedios();
+            int codigoPromedio = 0;
+            foreach (var rangos in rangosDePromedios)
+            {
+                if (promedioNotas >= rangos.ValorMinimo && promedioNotas <= rangos.ValorMaximo)
+                {
+                    codigoPromedio = rangos.CodigoPromedio;
+                }
+            }
+
+            await _fichaCalificacionService.UpdatePromedio(promedioNotas, codigoPromedio, codigoFichaDetalle);
+
+            return Ok(new { status = true, message = "El nuevo curso fue asiganado correctamente." });
+        }
+        catch
+        {
+            return BadRequest("Hubo un error al asignar el nuevo curso.");
+        }
     }
 
     [HttpPut("actualizarNotaCurso/{codigoCursoFichaCalificacion}")]
@@ -642,9 +850,11 @@ public class FichaCalificacionController : ControllerBase
                 return NotFound(new { status = false, message = "El bloque no se encontró." });
             }
             await _fichaCalificacionDetalleService.Delete(codigoFichaCalificacionDetalle);
-            return Ok(new{status = true, message="El bloque se borró correctamente."});
-        }catch{
-             return NotFound(new { status = false, message = "Hubo un error al eliminar el bloque." });
+            return Ok(new { status = true, message = "El bloque se borró correctamente." });
+        }
+        catch
+        {
+            return NotFound(new { status = false, message = "Hubo un error al eliminar el bloque." });
         }
 
     }
@@ -837,4 +1047,12 @@ public class CursosNuevoBloque
 {
     public int CodigoCurso { get; set; }
     public int Nota { get; set; }
+}
+
+public class ImagenesBloque
+{
+    public IFormFile? ImgEstudiante { get; set; }
+    public IFormFile? ImgFicha { get; set; }
+    public IFormFile? ImgCarta { get; set; }
+
 }

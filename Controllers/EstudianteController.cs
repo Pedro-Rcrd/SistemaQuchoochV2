@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using sistemaQuchooch.Data.QuchoochModels;
 using System.Linq.Expressions;
 using CloudinaryDotNet.Actions;
+using sistemaQuchooch.Data.DTOs;
 [Authorize]
 [Route("api/[controller]")]
 [ApiController]
@@ -36,6 +37,14 @@ public class EstudianteController : ControllerBase
     public async Task<IEnumerable<EstudianteDto>> SelectAll()
     {
         var estudiantes = await _estudianteService.SelectAll();
+        return estudiantes;
+    }
+
+    [HttpGet("buscarPorRangoFecha")]
+    public async Task<IEnumerable<EstudianteDto>> BuscarPorRangoFecha([FromQuery] DateTime fechaInicio, [FromQuery] DateTime fechaFin)
+    {
+        var model = new RangoFecha { FechaInicio = fechaInicio, FechaFin = fechaFin };
+        var estudiantes = await _estudianteService.EstudiantesPorRangoFecha(model);
         return estudiantes;
     }
 

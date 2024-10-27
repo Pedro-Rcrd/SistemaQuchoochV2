@@ -59,7 +59,6 @@ public class CompraService
     public async Task<IEnumerable<CompraOutAllDto>> SelectAll()
     {
         var compras = await _context.OrdenCompras
-        .Where(a => a.Estado == "A")
         .OrderByDescending(a => a.CodigoOrdenCompra)
         .Select(a => new CompraOutAllDto
         {
@@ -81,7 +80,37 @@ public class CompraService
 
         return compras;
     }
+    public async Task<IEnumerable<CompraOutAllDto>> ComprasPorRangoFecha(RangoFecha model)
+    {
+        var compras = await _context.OrdenCompras
+        .Where(a => a.FechaCreacion >= model.FechaInicio && a.FechaCreacion <= model.FechaFin)
+        .OrderByDescending(a => a.CodigoOrdenCompra)
+        .Select(a => new CompraOutAllDto
+        {
+            CodigoOrdenCompra = a.CodigoOrdenCompra,
+            CodigoBecario = a.CodigoEstudianteNavigation != null ? a.CodigoEstudianteNavigation.CodigoBecario : "",
+            Estudiante = a.CodigoEstudianteNavigation != null ? a.CodigoEstudianteNavigation.NombreEstudiante : "",
+            ApellidoEstudiante = a.CodigoEstudianteNavigation != null ? a.CodigoEstudianteNavigation.ApellidoEstudiante : "",
+            Proveedor = a.CodigoProveedorNavigation != null ? a.CodigoProveedorNavigation.NombreProveedor : "",
+            FechaCreacion = a.FechaCreacion,
+            Titulo = a.Titulo,
+            Estado = a.Estado,
+            PersonaRecibe = a.PersonaCreacion,
+            Descripcion = a.Descripcion,
+            FechaEntrega = a.FechaEntrega,
+            Total = a.Total,
+        })
+        .ToListAsync();
 
+        return compras;
+    }
+    public async Task<IEnumerable<CompraDetalle>> ListaProductos (int codigoCompra)
+    {
+        var productos = await _context.CompraDetalles
+        .Where(a => a.CodigoOrdenCompra == codigoCompra)
+        .ToListAsync();
+        return productos;
+    }
     public async Task<CompraOutAllDto?> GetByIdDto(int id) //Rol? = Indica que devuelve un objeto rol o un null
     {
         return await _context.OrdenCompras.Where(a => a.CodigoOrdenCompra == id).Select(a => new CompraOutAllDto
@@ -89,8 +118,10 @@ public class CompraService
             CodigoOrdenCompra = a.CodigoOrdenCompra,
             Estudiante = a.CodigoEstudianteNavigation != null ? a.CodigoEstudianteNavigation.NombreEstudiante : "",
             ApellidoEstudiante = a.CodigoEstudianteNavigation != null ? a.CodigoEstudianteNavigation.ApellidoEstudiante : "",
+            CodigoEstudiante = a.CodigoEstudiante,
             CodigoBecario = a.CodigoEstudianteNavigation != null ? a.CodigoEstudianteNavigation.CodigoBecario : "",
             Proveedor = a.CodigoProveedorNavigation != null ? a.CodigoProveedorNavigation.NombreProveedor : "",
+            CodigoProveedor = a.CodigoProveedor,
             FechaCreacion = a.FechaCreacion,
             Titulo = a.Titulo,
             Estado = a.Estado,
@@ -136,18 +167,18 @@ public class CompraService
 
         return newOrdenCompra;
     }
-    public async Task<OrdenCompraDetalle> CreateDetalle (OrdenCompraDetalle newOrdenCompraDetalle)
+    public async Task<CompraDetalle> CrearProducto (CompraDetalle compraDetalle)
     {
-        _context.OrdenCompraDetalles.Add(newOrdenCompraDetalle);
+        _context.CompraDetalles.Add(compraDetalle);
         await _context.SaveChangesAsync();
-        return newOrdenCompraDetalle;
+        return compraDetalle;
     }
     #endregion
 
     //Metodo para actualizar datos del OrdenCompra
-    public async Task Update(int id, OrdenCompra ordenCompra)
+    public async Task Update(int codigoComprra, OrdenCompra ordenCompra)
     {
-        var existingOrdenCompra = await GetById(id);
+        var existingOrdenCompra = await GetById(codigoComprra);
 
         if (existingOrdenCompra is not null)
         {
@@ -160,23 +191,35 @@ public class CompraService
             existingOrdenCompra.Descripcion = ordenCompra.Descripcion;
             existingOrdenCompra.FechaEntrega = ordenCompra.FechaEntrega;
             existingOrdenCompra.Total = ordenCompra.Total;
-            if (ordenCompra != null)
+            if (ordenCompra.ImgEstudiante != null)
             {
                 existingOrdenCompra.ImgEstudiante = ordenCompra.ImgEstudiante;
             }
-
             await _context.SaveChangesAsync();
         }
     }
 
-    //Metodo para elminar un Gasto
-    public async Task Delete(int id)
+    
+     public async Task ActualizarProducto(int codigoCompraDetalle, CompraDetalle producto)
     {
-        var compraToDelete = await GetById(id);
+            var productoExistente = await _context.CompraDetalles.FindAsync(codigoCompraDetalle);
+            if(productoExistente != null){
+                productoExistente.NombreProducto = producto.NombreProducto;
+                productoExistente.Cantidad = producto.Cantidad;
+                productoExistente.Precio = producto.Precio;
+            }
+            await _context.SaveChangesAsync();
+       
+    }
 
-        if (compraToDelete is not null)
+    //Metodo para elminar un Gasto
+    public async Task Delete(int codigoProducto)
+    {
+        var productoToDelete = await _context.CompraDetalles.FindAsync(codigoProducto);
+
+        if (productoToDelete is not null)
         {
-            _context.OrdenCompras.Remove(compraToDelete);
+           productoToDelete.Estatus = "I";
             await _context.SaveChangesAsync();
         }
     }

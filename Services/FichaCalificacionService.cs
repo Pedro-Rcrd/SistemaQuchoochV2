@@ -40,9 +40,7 @@ public class FichaCalificacionService
     }
     public async Task<IEnumerable<FichaCalificacionOutDto>> SelectAll()
     {
-        var yearActual = DateTime.Now.Year;
         var fichasCalificaciones = await _context.FichaCalificacions
-         .Where(a => a.CicloEscolar.HasValue && a.CicloEscolar.Value.Year == yearActual)  // Verificar que CicloEscolar no sea nulo y filtrar por año
          .OrderByDescending(a => a.CodigoFichaCalificacion)
         .Select(a => new FichaCalificacionOutDto
         {
@@ -55,12 +53,121 @@ public class FichaCalificacionService
             Grado = a.CodigoGradoNavigation.NombreGrado,
             Carrera = a.CodigoCarreraNavigation != null ? a.CodigoCarreraNavigation.NombreCarrera : "",
             CicloEscolar = a.CicloEscolar,
+            ModalidadEstudio = a.CodigoModalidadEstudioNavigation.NombreModalidadEstudio,
             Estatus = a.Estatus
         })
        .ToListAsync();
 
         return fichasCalificaciones;
     }
+    public async Task<IEnumerable<FichaCalificacionOutDto>> FichasPorEstudiante(int codigoEstudiante)
+    {
+        var fichasCalificaciones = await _context.FichaCalificacions
+        .Where(a => a.CodigoEstudiante == codigoEstudiante)
+        .OrderByDescending(a => a.CodigoFichaCalificacion)
+        .Select(a => new FichaCalificacionOutDto
+        {
+            CodigoFichaCalificacion = a.CodigoFichaCalificacion,
+            CodigoBecario = a.CodigoEstudianteNavigation.CodigoBecario,
+            Estudiante = a.CodigoEstudianteNavigation != null ? a.CodigoEstudianteNavigation.NombreEstudiante : "",
+            ApellidoEstudiante = a.CodigoEstudianteNavigation != null ? a.CodigoEstudianteNavigation.ApellidoEstudiante : "",
+            Establecimiento = a.CodigoEstablecimientoNavigation != null ? a.CodigoEstablecimientoNavigation.NombreEstablecimiento : "",
+            NivelAcademico = a.CodigoNivelAcademicoNavigation != null ? a.CodigoNivelAcademicoNavigation.NombreNivelAcademico : "",
+            Grado = a.CodigoGradoNavigation.NombreGrado,
+            Carrera = a.CodigoCarreraNavigation != null ? a.CodigoCarreraNavigation.NombreCarrera : "",
+            CicloEscolar = a.CicloEscolar,
+            ModalidadEstudio = a.CodigoModalidadEstudioNavigation.NombreModalidadEstudio,
+            Estatus = a.Estatus
+        })
+       .ToListAsync();
+        return fichasCalificaciones;
+    }
+    public async Task<IEnumerable<FichaCalificacionOutDto>> FichasPorRangoFecha(RangoFecha model)
+    {
+        var fichasCalificaciones = await _context.FichaCalificacions
+         .Where(a => a.FechaRegistro >= model.FechaInicio && a.FechaRegistro <= model.FechaFin)
+         .OrderByDescending(a => a.CodigoFichaCalificacion)
+        .Select(a => new FichaCalificacionOutDto
+        {
+            CodigoFichaCalificacion = a.CodigoFichaCalificacion,
+            CodigoBecario = a.CodigoEstudianteNavigation.CodigoBecario,
+            Estudiante = a.CodigoEstudianteNavigation != null ? a.CodigoEstudianteNavigation.NombreEstudiante : "",
+            ApellidoEstudiante = a.CodigoEstudianteNavigation != null ? a.CodigoEstudianteNavigation.ApellidoEstudiante : "",
+            Establecimiento = a.CodigoEstablecimientoNavigation != null ? a.CodigoEstablecimientoNavigation.NombreEstablecimiento : "",
+            NivelAcademico = a.CodigoNivelAcademicoNavigation != null ? a.CodigoNivelAcademicoNavigation.NombreNivelAcademico : "",
+            Grado = a.CodigoGradoNavigation.NombreGrado,
+            Carrera = a.CodigoCarreraNavigation != null ? a.CodigoCarreraNavigation.NombreCarrera : "",
+            CicloEscolar = a.CicloEscolar,
+            ModalidadEstudio = a.CodigoModalidadEstudioNavigation.NombreModalidadEstudio,
+            Estatus = a.Estatus
+        })
+       .ToListAsync();
+
+        return fichasCalificaciones;
+    }
+
+
+    public async Task<IEnumerable<PromedioEstudianteDto>> ObtenerPromediosGenerales(int cantidad)
+    {
+        var promediosGenerales = await _context.FichaCalificacionDetalles
+            .Where(fcd => fcd.CodigoFichaCalificacionNavigation.Estatus == "A" && fcd.Estatus == "A")
+            .GroupBy(fcd => new
+            {
+                CodigoFichaCalificacion = fcd.CodigoFichaCalificacion ?? 0, // Manejar el valor nullable
+                fcd.CodigoFichaCalificacionNavigation.CodigoEstudiante,
+                NombreCompleto = fcd.CodigoFichaCalificacionNavigation.CodigoEstudianteNavigation.NombreEstudiante + " " + fcd.CodigoFichaCalificacionNavigation.CodigoEstudianteNavigation.ApellidoEstudiante,
+                fcd.CodigoFichaCalificacionNavigation.CodigoNivelAcademicoNavigation.NombreNivelAcademico,
+                fcd.CodigoFichaCalificacionNavigation.CodigoGradoNavigation.NombreGrado
+            })
+            .Select(g => new PromedioEstudianteDto
+            {
+                CodigoFichaCalificacion = g.Key.CodigoFichaCalificacion,
+                CodigoEstudiante = g.Key.CodigoEstudiante,
+                NombreEstudiante = g.Key.NombreCompleto,
+                PromedioGeneral = (double)(g.Average(fcd => fcd.Promedio) ?? 0), // Conversión explícita a double
+                NivelAcademico = g.Key.NombreNivelAcademico,
+                Grado = g.Key.NombreGrado
+            })
+            .OrderByDescending(dto => dto.PromedioGeneral)
+            .Take(cantidad)
+            .ToListAsync();
+
+        return promediosGenerales;
+    }
+
+
+    public async Task<IEnumerable<PromedioCursosPorFicha>?> ObtenerPromedioPorCursos(int codigoFichaCalificacion)
+{
+    // Obtener los detalles de la ficha de calificación
+    var bloques = await _context.FichaCalificacionDetalles
+        .Where(a => a.CodigoFichaCalificacion == codigoFichaCalificacion && a.Estatus == "A")
+        .Select(a => a.CodigoFichaCalificacionDetalle)
+        .ToListAsync();
+
+    // Validar si hay bloques antes de continuar
+    if (!bloques.Any()) 
+        return null;
+
+    // Obtener los cursos agrupados por código y nombre del curso
+    var cursos = await _context.CursoFichaCalificacions
+        .Where(a => a.CodigoFichaCalificacionDetalle.HasValue && 
+            bloques.Contains(a.CodigoFichaCalificacionDetalle.Value) && a.Estatus == "A") // Uso de Contains
+        .GroupBy(cfc => new
+        {
+            cfc.CodigoCurso,
+            cfc.CodigoCursoNavigation.NombreCurso,
+        })
+        .Select(a => new PromedioCursosPorFicha
+        {
+            Curso = a.Key.NombreCurso,
+            PromedioGeneral = (double)(a.Average(cfc => cfc.Nota) ?? 0), // Conversión segura a double
+        })
+        .ToListAsync();
+
+    return cursos;
+}
+
+
 
     public async Task<InformacionNuevoBloqueFichaDto?> InformacionFichaCalificacion(int codigoFichaCalificacion)
     {
@@ -94,7 +201,7 @@ public class FichaCalificacionService
         return encabezadoFichaCalificacion;
     }
 
-    
+
     public async Task<InformacionActualizarFichaDto?> InformacionActualizarFichaCalificacion(int codigoFichaCalificacion)
     {
         var encabezadoFichaCalificacion = await _context.FichaCalificacions
@@ -171,6 +278,7 @@ public class FichaCalificacionService
          .Select(f => new ImagenesFichaDto
          {
              NumeroBloque = f.Bloque,
+             CodigoFichaCalificacionDetalle = f.CodigoFichaCalificacionDetalle,
              ImgEstudiante = f.ImgEstudiante,
              ImgCarta = f.ImgCarta,
              ImgFichaCalificacion = f.ImgFichaCalificacion
@@ -233,60 +341,62 @@ public class FichaCalificacionService
         return fichaCalificacion;
     }
 
- public async Task<InformacionActualizarFichaDto> ObtenerBloquesYCursosActualizarFicha(int codigoFichaCalificacion)
-{
-    var bloques = await _context.FichaCalificacionDetalles
-        .Where(f => f.CodigoFichaCalificacion == codigoFichaCalificacion && f.Estatus == "A")
-        .Select(f => new
-        {
-            f.CodigoFichaCalificacionDetalle,
-            f.Bloque,
-            f.Promedio,
-            f.CodigoPromedio
-        })
-        .ToListAsync();
-
-    var cursosPorBloque = await _context.CursoFichaCalificacions
-        .Where(cfc => bloques.Select(b => b.CodigoFichaCalificacionDetalle)
-                     .Contains(cfc.CodigoFichaCalificacionDetalle ?? 0) && cfc.Estatus == "A")
-        .Join(_context.Cursos,
-            cfc => cfc.CodigoCurso,
-            c => c.CodigoCurso,
-            (cfc, c) => new
-            {
-                cfc.CodigoFichaCalificacionDetalle,
-                c.NombreCurso,
-                cfc.CodigoCursoFichaCalificacion,
-                cfc.Nota
-            })
-        .ToListAsync();
-
-    var listaDeBloques = bloques
-        .Select(bloque => new BloquesDto
-        {
-            CodigoFichaCalificacionDetalle = bloque.CodigoFichaCalificacionDetalle,
-            Bloque = bloque.Bloque,
-            Promedio = (float)(bloque.Promedio ?? 0.0m),
-            CodigoPromedio = bloque.CodigoPromedio,
-            Materias = cursosPorBloque
-                .Where(c => c.CodigoFichaCalificacionDetalle == bloque.CodigoFichaCalificacionDetalle)
-                .Select(c => new MateriaDto
-                {
-                    NombreCurso = c.NombreCurso,
-                    Nota = c.Nota.ToString(),
-                    CodigoCursoFichaCalificacion = c.CodigoCursoFichaCalificacion
-                })
-                .ToList() // Cambiado a ToList()
-        })
-        .ToList();
-
-    var fichaCalificacion = new InformacionActualizarFichaDto
+    public async Task<InformacionActualizarFichaDto> ObtenerBloquesYCursosActualizarFicha(int codigoFichaCalificacion)
     {
-        Bloques = listaDeBloques
-    };
+        var bloques = await _context.FichaCalificacionDetalles
+            .Where(f => f.CodigoFichaCalificacion == codigoFichaCalificacion && f.Estatus == "A")
+            .Select(f => new
+            {
+                f.CodigoFichaCalificacionDetalle,
+                f.Bloque,
+                f.Promedio,
+                f.CodigoPromedio
+            })
+            .ToListAsync();
 
-    return fichaCalificacion;
-}
+        var cursosPorBloque = await _context.CursoFichaCalificacions
+            .Where(cfc => bloques.Select(b => b.CodigoFichaCalificacionDetalle)
+                         .Contains(cfc.CodigoFichaCalificacionDetalle ?? 0) && cfc.Estatus == "A")
+            .Join(_context.Cursos,
+                cfc => cfc.CodigoCurso,
+                c => c.CodigoCurso,
+                (cfc, c) => new
+                {
+                    cfc.CodigoFichaCalificacionDetalle,
+                    c.NombreCurso,
+                    cfc.CodigoCursoFichaCalificacion,
+                    cfc.Nota,
+                    cfc.CodigoCurso
+                })
+            .ToListAsync();
+
+        var listaDeBloques = bloques
+            .Select(bloque => new BloquesDto
+            {
+                CodigoFichaCalificacionDetalle = bloque.CodigoFichaCalificacionDetalle,
+                Bloque = bloque.Bloque,
+                Promedio = (float)(bloque.Promedio ?? 0.0m),
+                CodigoPromedio = bloque.CodigoPromedio,
+                Materias = cursosPorBloque
+                    .Where(c => c.CodigoFichaCalificacionDetalle == bloque.CodigoFichaCalificacionDetalle)
+                    .Select(c => new MateriaDto
+                    {
+                        NombreCurso = c.NombreCurso,
+                        Nota = c.Nota.ToString(),
+                        CodigoCursoFichaCalificacion = c.CodigoCursoFichaCalificacion,
+                        CodigoCurso = c.CodigoCurso ?? 0
+                    })
+                    .ToList() // Cambiado a ToList()
+            })
+            .ToList();
+
+        var fichaCalificacion = new InformacionActualizarFichaDto
+        {
+            Bloques = listaDeBloques
+        };
+
+        return fichaCalificacion;
+    }
 
 
 
@@ -429,6 +539,25 @@ public class FichaCalificacionService
 
         return newFichaCalificacion;
     }
+    public async Task<FichaCalificacion> UpdateFicha(int codigoFichaCalificacion, FichaCalificacion ficha)
+    {
+        var existingFicha = await GetById(codigoFichaCalificacion);
+        if (existingFicha != null)
+        {
+            existingFicha.CodigoEstudiante = ficha.CodigoEstudiante;
+            existingFicha.CodigoEstablecimiento = ficha.CodigoEstablecimiento;
+            existingFicha.CodigoNivelAcademico = ficha.CodigoNivelAcademico;
+            existingFicha.CodigoGrado = ficha.CodigoGrado;
+            existingFicha.CodigoCarrera = ficha.CodigoCarrera;
+            existingFicha.CicloEscolar = ficha.CicloEscolar;
+            existingFicha.FechaRegistro = ficha.FechaRegistro;
+            existingFicha.CodigoModalidadEstudio = ficha.CodigoModalidadEstudio;
+            existingFicha.Estatus = ficha.Estatus;
+            await _context.SaveChangesAsync();
+
+        }
+        return ficha;
+    }
 
     //Obtener datos de promedios
     public async Task<IEnumerable<Promedio>> RangosDePromedios()
@@ -464,6 +593,20 @@ public class FichaCalificacionService
         {
             existingFichaDetalle.Promedio = (decimal?)promedio;
             existingFichaDetalle.CodigoPromedio = codigoPromedio;
+            await _context.SaveChangesAsync();
+        }
+    }
+    public async Task ActualizarPerfilEstudiante(int codigoEstudiante, Estudiante estudiante)
+    {
+        var existingEstudiante = await _context.Estudiantes.FindAsync(codigoEstudiante);
+
+        if (existingEstudiante is not null)
+        {
+            existingEstudiante.CodigoNivelAcademico = estudiante.CodigoNivelAcademico;
+            existingEstudiante.CodigoGrado = estudiante.CodigoGrado;
+            existingEstudiante.CodigoCarrera = estudiante.CodigoCarrera;
+            existingEstudiante.CodigoEstablecimiento = estudiante.CodigoEstablecimiento;
+            existingEstudiante.CodigoModalidadEstudio = estudiante.CodigoModalidadEstudio;
             await _context.SaveChangesAsync();
         }
     }

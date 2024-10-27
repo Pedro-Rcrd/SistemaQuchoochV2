@@ -58,6 +58,7 @@ public class EstudianteService
     public async Task<IEnumerable<EstudianteDto>> SelectAll()
     {
         var estudiantes = await _context.Estudiantes
+        .OrderByDescending(a => a.CodigoEstudiante)
         .Select(a => new EstudianteDto
         {
             CodigoBecario = a.CodigoBecario,
@@ -77,6 +78,46 @@ public class EstudianteService
             Grado = a.CodigoGradoNavigation != null ? a.CodigoGradoNavigation.NombreGrado : "",
             Carrera = a.CodigoCarreraNavigation != null ? a.CodigoCarreraNavigation.NombreCarrera : "",
             Establecimiento = a.CodigoEstablecimientoNavigation != null ? a.CodigoEstablecimientoNavigation.NombreEstablecimiento : "",
+            ModalidadEstudio = a.CodigoModalidadEstudioNavigation.NombreModalidadEstudio,
+            NombrePadre = a.NombrePadre,
+            TelefonoPadre = a.TelefonoPadre,
+            OficioPadre = a.OficioPadre,
+            NombreMadre = a.NombreMadre,
+            TelefonoMadre = a.TelefonoMadre,
+            OficioMadre = a.OficioMadre,
+            FotoPerfil = a.FotoPerfil,
+            FechaRegistro = a.FechaRegistro
+        })
+        .ToListAsync();
+
+        return estudiantes;
+    }
+
+    public async Task<IEnumerable<EstudianteDto>> EstudiantesPorRangoFecha(RangoFecha model)
+    {
+        var estudiantes = await _context.Estudiantes
+        .Where(a => a.FechaRegistro >= model.FechaInicio && a.FechaRegistro <= model.FechaFin)
+        .OrderByDescending(a => a.CodigoEstudiante)
+        .Select(a => new EstudianteDto
+        {
+            CodigoBecario = a.CodigoBecario,
+            CodigoEstudiante = a.CodigoEstudiante,
+            NombreEstudiante = a.NombreEstudiante,
+            ApellidoEstudiante = a.ApellidoEstudiante,
+            FechaNacimieto = a.FechaNacimieto,
+            Genero = a.Genero,
+            Estado = a.Estado,
+            TelefonoEstudiante = a.TelefonoEstudiante,
+            Email = a.Email,
+            Comunidad = a.CodigoComunidadNavigation != null ? a.CodigoComunidadNavigation.NombreComunidad : "",
+            Sector = a.Sector,
+            NumeroCasa = a.NumeroCasa,
+            Descripcion = a.Descripcion,
+            NivelAcademico = a.CodigoNivelAcademicoNavigation != null ? a.CodigoNivelAcademicoNavigation.NombreNivelAcademico : "",
+            Grado = a.CodigoGradoNavigation != null ? a.CodigoGradoNavigation.NombreGrado : "",
+            Carrera = a.CodigoCarreraNavigation != null ? a.CodigoCarreraNavigation.NombreCarrera : "",
+            Establecimiento = a.CodigoEstablecimientoNavigation != null ? a.CodigoEstablecimientoNavigation.NombreEstablecimiento : "",
+            ModalidadEstudio = a.CodigoModalidadEstudioNavigation.NombreModalidadEstudio,
             NombrePadre = a.NombrePadre,
             TelefonoPadre = a.TelefonoPadre,
             OficioPadre = a.OficioPadre,
@@ -96,7 +137,7 @@ public class EstudianteService
         return await _context.Estudiantes.CountAsync();
     }
 
-    public async Task<EstudianteDto?> Ficha (int codigoEstudiante) //Rol? = Indica que devuelve un objeto rol o un null
+    public async Task<EstudianteDto?> Ficha(int codigoEstudiante) //Rol? = Indica que devuelve un objeto rol o un null
     {
         return await _context.Estudiantes
         .Where(a => a.CodigoEstudiante == codigoEstudiante)
@@ -136,6 +177,14 @@ public class EstudianteService
     {
         return await _context.Estudiantes.FindAsync(id);
     }
+    public async Task<int?> BuscarCodigoEstudiantePorBecario(string codigoBecario)
+    {
+        return await _context.Estudiantes
+                             .Where(e => e.CodigoBecario == codigoBecario)
+                             .Select(e => e.CodigoEstudiante)
+                             .FirstOrDefaultAsync();
+    }
+
 
 
     //Método para crear nuevo Usuario

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using sistemaQuchooch.Sevices;
 using Microsoft.AspNetCore.Authorization;
 using sistemaQuchooch.Data.QuchoochModels;
+using sistemaQuchooch.Data.DTOs;
 [Authorize]
 [Route("api/[controller]")]
 [ApiController]
@@ -15,18 +16,22 @@ public class PatrocinadorController : ControllerBase
     private readonly ComunidadService _comunidadService;
     private readonly NivelAcademicoService _nivelAcademicoService;
 
+    private readonly ConvertirImagenBase64Service _convertirImagenBase64Service;
+
     public PatrocinadorController(FileUploadService fileUploadService,
                                 PatrocinadorService patrocinadorService,
                                 ComunidadService comunidadService,
-                                NivelAcademicoService nivelAcademicoService)
+                                NivelAcademicoService nivelAcademicoService,
+                                ConvertirImagenBase64Service convertirImagenBase64Service)
     {
         _fileUploadService = fileUploadService;
         _patrocinadorService = patrocinadorService;
         _comunidadService = comunidadService;
         _nivelAcademicoService = nivelAcademicoService;
+        _convertirImagenBase64Service = convertirImagenBase64Service;
     }
 
-        //Metodo para obtener la lista de Patrocinadores
+    //Metodo para obtener la lista de Patrocinadores
     [HttpGet("getall")]
     public async Task<IActionResult> GetAll(int pagina = 1, int elementosPorPagina = 10, int id = 0)
     {
@@ -50,151 +55,192 @@ public class PatrocinadorController : ControllerBase
         return Ok(resultado);
     }
     [HttpGet("selectAll")]
-         public async Task<IEnumerable<PatrocinadorOutAllDto>> SelectAll()
+    public async Task<IEnumerable<PatrocinadorOutAllDto>> SelectAll()
     {
         var patrocinadores = await _patrocinadorService.SelectAll();
         return patrocinadores;
     }
-    [HttpGet("{id}")]
-    public async Task<ActionResult<Patrocinador>> GetById(int id)
+
+     [HttpGet("buscarPorRangoFecha")]
+    public async Task<IEnumerable<PatrocinadorOutAllDto>> BuscarPorRangoFecha([FromQuery] DateTime fechaInicio, [FromQuery] DateTime fechaFin)
     {
-        var patrocinador = await _patrocinadorService.GetById(id);
+        var model = new RangoFecha { FechaInicio = fechaInicio, FechaFin = fechaFin };
+        var patrocinadores = await _patrocinadorService.PatrocinadoresPorRangoFecha(model);
+        return patrocinadores;
+    }
+
+
+    [HttpGet("{codigoPatrocinador}")]
+    public async Task<ActionResult<Patrocinador>> GetById(int codigoPatrocinador)
+    {
+        var patrocinador = await _patrocinadorService.GetById(codigoPatrocinador);
 
         if (patrocinador is null)
         {
             //Es un método para mostrar error explicito
-            return PatrocinadorNotFound(id);
+            return PatrocinadorNotFound(codigoPatrocinador);
         }
 
         return patrocinador;
     }
 
     //Información visible del patrocinador
-    [HttpGet("infpatrocinador/{id}")]
+    [HttpGet("ficha/{codigoPatrocinador}")]
     //Información para visualizar datos
-    public async Task<ActionResult<PatrocinadorOutAllDto>> GetByIdDto(int id)
+    public async Task<ActionResult<PatrocinadorOutAllDto>> GetByIdDto(int codigoPatrocinador)
     {
-        var patrocinador = await _patrocinadorService.GetByIdDto(id);
-
-        if (patrocinador is null)
+        try
         {
-            //Es un método para mostrar error explicito
-            return PatrocinadorNotFound(id);
-        }
+            string fotoPerfilBase64 = string.Empty;
+            var patrocinador = await _patrocinadorService.GetByIdDto(codigoPatrocinador);
+            if (patrocinador is null)
+            {
+                //Es un método para mostrar error explicito
+                return PatrocinadorNotFound(codigoPatrocinador);
+            }
 
-        return patrocinador;
+            string urlFotoPerfil = patrocinador.FotoPerfil;
+            if (urlFotoPerfil != null)
+            {
+                fotoPerfilBase64 = await _convertirImagenBase64Service.ConvertirImagenBase64(urlFotoPerfil);
+                if (fotoPerfilBase64 != null)
+                {
+                    patrocinador.FotoPerfil = fotoPerfilBase64;
+                }
+            }
+
+            return patrocinador;
+        }
+        catch
+        {
+            return BadRequest(new { status = false, message = "Hubo un error al intentar obtener la información de la ficha del pratrocinador" });
+        }
     }
 
 
     [HttpPost("create")]
     public async Task<IActionResult> CrearPatrocinador([FromForm] PatrocinadorInputDto model)
     {
-        try{
+        try
+        {
             if (model == null)
+            {
+                return BadRequest("Los datos del Patrocinador son inválidos.");
+            }
+
+            //var img = model.ImgPatrocinador.FileName;
+            var img = model.ImgPatrocinador;
+            string folder = "Patrocinadores";
+            string imageUrl = "sin imagenes";
+
+            if (img != null)
+            {
+                var file = Request.Form.Files[0];
+                imageUrl = await _fileUploadService.UploadFileAsync(file, folder);
+            }
+
+            Patrocinador patrocinador = new Patrocinador()
+            {
+                CodigoPais = model.CodigoPais,
+                NombrePatrocinador = model.NombrePatrocinador,
+                ApellidoPatrocinador = model.ApellidoPatrocinador,
+                Profesion = model.Profesion,
+                Estado = model.Estado,
+                FechaNacimiento = model.FechaNacimiento,
+                FechaCreacion = model.FechaCreacion,
+                FotoPerfil = imageUrl
+            };
+            await _patrocinadorService.Create(patrocinador);
+
+            return Ok(new { status = true, message = "El patrocinador se ha creado correctamente." });
+
+        }
+        catch
         {
-            return BadRequest("Los datos del Patrocinador son inválidos.");
+            return BadRequest();
         }
-        
-        //var img = model.ImgPatrocinador.FileName;
-        var img = model.ImgPatrocinador;
-         string folder = "Becarios";
-         string imageUrl = "sin imagenes";
 
-        if (img != null)
+    }
+
+    //METODO PARA EDITAR
+    [HttpPut("update/{codigoPatrocinador}")]
+    public async Task<IActionResult> EditarPatrocinador(int codigoPatrocinador, [FromForm] PatrocinadorInputDto model)
+    {
+        try
         {
-            var file = Request.Form.Files[0];
-             imageUrl = await _fileUploadService.UploadFileAsync(file, folder);
-             Console.WriteLine("Se pasó por aquí");
+            if (model == null)
+            {
+                return BadRequest("Los datos del Patrocinador son inválidos.");
+            }
+
+            //var img = model.ImgPatrocinador.FileName;
+            var img = model.ImgPatrocinador;
+            string folder = "Patrocinadores";
+            string imageUrl = null;
+
+            if (img != null)
+            {
+                var file = Request.Form.Files[0];
+                imageUrl = await _fileUploadService.UploadFileAsync(file, folder);
+            }
+
+            Patrocinador patrocinador = new Patrocinador()
+            {
+                CodigoPais = model.CodigoPais,
+                NombrePatrocinador = model.NombrePatrocinador,
+                ApellidoPatrocinador = model.ApellidoPatrocinador,
+                Profesion = model.Profesion,
+                Estado = model.Estado,
+                FechaNacimiento = model.FechaNacimiento,
+                FechaCreacion = model.FechaCreacion,
+                FotoPerfil = imageUrl
+            };
+
+            var patrocinadorToUpdate = await _patrocinadorService.GetById(codigoPatrocinador);
+            if (patrocinadorToUpdate is not null)
+            {
+                await _patrocinadorService.Update(codigoPatrocinador, patrocinador);
+                return Ok(new
+                {
+                    status = true,
+                    message = "Patrocinador modificado correctamente"
+                });
+
+            }
+            else
+            {
+                return PatrocinadorNotFound(codigoPatrocinador);
+            }
+
+        }
+        catch
+        {
+            return BadRequest();
         }
 
-        Patrocinador patrocinador = new Patrocinador();
-        patrocinador.CodigoPais = model.CodigoPais;
-        patrocinador.NombrePatrocinador = model.NombrePatrocinador;
-        patrocinador.ApellidoPatrocinador = model.ApellidoPatrocinador;
-        patrocinador.Profesion = model.Profesion;
-        patrocinador.Estado = model.Estado;
-        patrocinador.FechaNacimiento = model.FechaNacimiento;
-        patrocinador.FechaCreacion = model.FechaCreacion;
-        patrocinador.FotoPerfil = imageUrl;
-        await _patrocinadorService.Create(patrocinador);
-
-        return Ok("Patrocinador Creado exitosamente");
-
-        }catch{
-           return BadRequest();
-        }
-        
     }
 
     //Método para actualizar estado
     //METODO PARA EDITAR
-    [HttpPut("updateestado/{id}")]
-    public async Task<IActionResult> UpdateEstado(int id)
+    [HttpPut("delete/{id}")]
+    public async Task<IActionResult> Delete (int codigoPatrocinador)
     {
-         try{
-            await _patrocinadorService.UpdateStatus(id);
-             return Ok(new
+        try
+        {
+            await _patrocinadorService.Delete(codigoPatrocinador);
+            return Ok(new
             {
                 status = true,
-                message = "Patrocinador modificado correctamente"
+                message = "El Patrocinador ha sido eliminado correctamente"
             });
 
-        }catch{
-           return BadRequest();
+        }
+        catch
+        {
+            return BadRequest(new{status = false, message ="Hubo un error al intentar eliminar el patrocinador."});
         }
     }
 
-
-    //METODO PARA EDITAR
-    [HttpPut("updateimage/{id}")]
-    public async Task<IActionResult> EditarPatrocinador(int id, [FromForm] PatrocinadorInputDto model)
-    {
-         try{
-            if (model == null)
-        {
-            return BadRequest("Los datos del Patrocinador son inválidos.");
-        }
-        
-        //var img = model.ImgPatrocinador.FileName;
-        var img = model.ImgPatrocinador;
-         string folder = "Becarios";
-         string imageUrl = null;
-
-        if (img != null)
-        {
-            var file = Request.Form.Files[0];
-             imageUrl = await _fileUploadService.UploadFileAsync(file, folder);
-             Console.WriteLine("Se pasó por aquí");
-        }
-
-        Patrocinador patrocinador = new Patrocinador();
-        patrocinador.CodigoPais = model.CodigoPais;
-        patrocinador.NombrePatrocinador = model.NombrePatrocinador;
-        patrocinador.ApellidoPatrocinador = model.ApellidoPatrocinador;
-        patrocinador.Profesion = model.Profesion;
-        patrocinador.Estado = model.Estado;
-        patrocinador.FechaNacimiento = model.FechaNacimiento;
-        patrocinador.FechaCreacion = model.FechaCreacion;
-        patrocinador.FotoPerfil = imageUrl;
-        Console.WriteLine("Se llegó hasta aquí");
-        var patrocinadorToUpdate = await _patrocinadorService.GetById(id);
-        if(patrocinadorToUpdate is not null){
-            await _patrocinadorService.Update(id, patrocinador);
-             return Ok(new
-            {
-                status = true,
-                message = "Patrocinador modificado correctamente"
-            });
-
-        }else{
-            return PatrocinadorNotFound(id);
-            }
-
-        }catch{
-           return BadRequest();
-        }
-
-    }
 
     public NotFoundObjectResult PatrocinadorNotFound(int id)
     {
@@ -202,22 +248,22 @@ public class PatrocinadorController : ControllerBase
     }
 
 
-  /*   public async Task<string> ValidateStudent(Patrocinador patrocinador)
-    {
-        string result = "valid";
-        var patrocinadorComunidad = patrocinador.CodigoComunidad.GetValueOrDefault(); //Para validar que el codigoRol no sea Nulo
-        var tipoComunidad = await _comunidadService.GetById(patrocinadorComunidad);
-        var patrocinadorNivelAcademico = patrocinador.CodigoNivelAcademico.GetValueOrDefault(); //Para validar que el codigoRol no sea Nulo
-        var tipoNivelAcademico = await _nivelAcademicoService.GetById(patrocinadorNivelAcademico);
+    /*   public async Task<string> ValidateStudent(Patrocinador patrocinador)
+      {
+          string result = "valid";
+          var patrocinadorComunidad = patrocinador.CodigoComunidad.GetValueOrDefault(); //Para validar que el codigoRol no sea Nulo
+          var tipoComunidad = await _comunidadService.GetById(patrocinadorComunidad);
+          var patrocinadorNivelAcademico = patrocinador.CodigoNivelAcademico.GetValueOrDefault(); //Para validar que el codigoRol no sea Nulo
+          var tipoNivelAcademico = await _nivelAcademicoService.GetById(patrocinadorNivelAcademico);
 
-        if (tipoComunidad is null)
-        {
-            result = $"La comunidad {tipoComunidad} no existe";
-        }
-        if (tipoNivelAcademico is null)
-        {
-            result = $"El nivel academico {tipoNivelAcademico} no existe";
-        }
-        return result;
-    } */
+          if (tipoComunidad is null)
+          {
+              result = $"La comunidad {tipoComunidad} no existe";
+          }
+          if (tipoNivelAcademico is null)
+          {
+              result = $"El nivel academico {tipoNivelAcademico} no existe";
+          }
+          return result;
+      } */
 }

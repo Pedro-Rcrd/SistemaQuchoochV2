@@ -15,5 +15,6 @@ public class UsuarioDtoInput
     public string Contrasenia { get; set; }
 
     public string ContraseniaNueva { get; set; }
+    public string? Estatus { get; set; }
 
 }

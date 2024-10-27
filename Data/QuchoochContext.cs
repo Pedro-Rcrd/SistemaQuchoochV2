@@ -20,6 +20,8 @@ public partial class QuchoochContext : DbContext
 
     public virtual DbSet<Carrera> Carreras { get; set; }
 
+    public virtual DbSet<CompraDetalle> CompraDetalles { get; set; }
+
     public virtual DbSet<Comunidad> Comunidads { get; set; }
 
     public virtual DbSet<Curso> Cursos { get; set; }
@@ -104,6 +106,31 @@ public partial class QuchoochContext : DbContext
             entity.HasOne(d => d.CodigoNivelAcademicoNavigation).WithMany(p => p.Carreras)
                 .HasForeignKey(d => d.CodigoNivelAcademico)
                 .HasConstraintName("pf_carrera_nivelAcademico_codigoNivelAcademico");
+        });
+
+        modelBuilder.Entity<CompraDetalle>(entity =>
+        {
+            entity.HasKey(e => e.CodigoCompraDetalle).HasName("pk_compraDetalle_codigoCompraDetalle");
+
+            entity.ToTable("compraDetalle");
+
+            entity.Property(e => e.CodigoCompraDetalle).HasColumnName("codigoCompraDetalle");
+            entity.Property(e => e.Cantidad).HasColumnName("cantidad");
+            entity.Property(e => e.CodigoOrdenCompra).HasColumnName("codigoOrdenCompra");
+            entity.Property(e => e.Estatus)
+                .HasMaxLength(1)
+                .IsUnicode(false)
+                .HasColumnName("estatus");
+            entity.Property(e => e.NombreProducto)
+                .HasMaxLength(64)
+                .HasColumnName("nombreProducto");
+            entity.Property(e => e.Precio)
+                .HasColumnType("decimal(8, 2)")
+                .HasColumnName("precio");
+
+            entity.HasOne(d => d.CodigoOrdenCompraNavigation).WithMany(p => p.CompraDetalles)
+                .HasForeignKey(d => d.CodigoOrdenCompra)
+                .HasConstraintName("fk_compraDetalle_Compra_codigoCompra");
         });
 
         modelBuilder.Entity<Comunidad>(entity =>
@@ -298,6 +325,10 @@ public partial class QuchoochContext : DbContext
             entity.Property(e => e.CodigoEstudiantePatrocinador).HasColumnName("codigoEstudiantePatrocinador");
             entity.Property(e => e.CodigoEstudiante).HasColumnName("codigoEstudiante");
             entity.Property(e => e.CodigoPatrocinador).HasColumnName("codigoPatrocinador");
+            entity.Property(e => e.Estatus)
+                .HasMaxLength(1)
+                .IsUnicode(false)
+                .HasColumnName("estatus");
 
             entity.HasOne(d => d.CodigoEstudianteNavigation).WithMany(p => p.EstudiantePatrocinadors)
                 .HasForeignKey(d => d.CodigoEstudiante)
@@ -454,6 +485,10 @@ public partial class QuchoochContext : DbContext
                 .HasColumnType("decimal(7, 2)")
                 .HasColumnName("cantidad");
             entity.Property(e => e.CodigoGasto).HasColumnName("codigoGasto");
+            entity.Property(e => e.Estatus)
+                .HasMaxLength(1)
+                .IsUnicode(false)
+                .HasColumnName("estatus");
             entity.Property(e => e.NombreProducto)
                 .HasMaxLength(128)
                 .HasColumnName("nombreProducto");

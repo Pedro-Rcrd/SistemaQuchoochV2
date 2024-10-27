@@ -114,6 +114,33 @@ public class FichaCalificacionDetalleService
         }
     }
 
+    public async Task UpdateImagenes(int codigoFichaDetalle, FichaCalificacionDetalle fichaCalificacionDetalle)
+    {
+        var existingFichaCalificacionDetalle = await GetById(codigoFichaDetalle);
+
+        if (existingFichaCalificacionDetalle is not null)
+        {
+            // Verificar si ImgEstudiante no es nulo o vacío antes de asignar
+            if (!string.IsNullOrEmpty(fichaCalificacionDetalle.ImgEstudiante))
+            {
+                existingFichaCalificacionDetalle.ImgEstudiante = fichaCalificacionDetalle.ImgEstudiante;
+            }
+
+            // Verificar si ImgFichaCalificacion no es nulo o vacío antes de asignar
+            if (!string.IsNullOrEmpty(fichaCalificacionDetalle.ImgFichaCalificacion))
+            {
+                existingFichaCalificacionDetalle.ImgFichaCalificacion = fichaCalificacionDetalle.ImgFichaCalificacion;
+            }
+
+            // Verificar si ImgCarta no es nulo o vacío antes de asignar
+            if (!string.IsNullOrEmpty(fichaCalificacionDetalle.ImgCarta))
+            {
+                existingFichaCalificacionDetalle.ImgCarta = fichaCalificacionDetalle.ImgCarta;
+            }
+            await _context.SaveChangesAsync();
+        }
+    }
+
     //Metodo para elminar una FichaCalificacionDetalle
     public async Task Delete(int id)
     {

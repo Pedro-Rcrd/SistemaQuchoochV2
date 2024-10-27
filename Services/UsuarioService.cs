@@ -121,6 +121,7 @@ public async Task<UsuarioFichaInformacionDto> FichaUsuario(int codigoUsuario)
             existingUsuario.FechaCreacion = usuario.FechaCreacion;
             existingUsuario.Email = usuario.Email;
             existingUsuario.Contrasenia = !string.IsNullOrWhiteSpace(usuario.ContraseniaNueva) ? usuario.ContraseniaNueva : existingUsuario.Contrasenia;
+            existingUsuario.Estatus = usuario.Estatus;
             await _context.SaveChangesAsync();
         }
     }

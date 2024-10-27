@@ -6,7 +6,8 @@ namespace sistemaQuchooch.Data.QuchoochModels;
 public partial class GastoOutAllDto
 {
     public int CodigoGasto { get; set; }
-    public string Estudiante { get; set; }
+    public int codigoEstudiante { get; set; }
+    public string NombreEstudiante { get; set; }
     public string ApellidoEstudiante { get; set; }
     public string CodigoBecario { get; set; }
 

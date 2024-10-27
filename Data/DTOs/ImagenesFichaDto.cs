@@ -7,6 +7,7 @@ namespace sistemaQuchooch.Data.DTOs;
 public partial class ImagenesFichaDto
 {
     public int? NumeroBloque { get; set; }
+    public int CodigoFichaCalificacionDetalle {get; set;}
     public string? ImgEstudiante { get; set; }
     public string? ImgCarta { get; set; }
     public string? ImgFichaCalificacion { get; set; }

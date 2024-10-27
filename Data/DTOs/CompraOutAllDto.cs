@@ -6,11 +6,14 @@ namespace sistemaQuchooch.Data.QuchoochModels;
 public partial class CompraOutAllDto
 {
     public int CodigoOrdenCompra { get; set; }
+    public int CodigoEstudiante { get; set; }
+
     public string Estudiante { get; set; }
     public string ApellidoEstudiante { get; set; }
     public string CodigoBecario { get; set; }
 
     public string Proveedor { get; set; }
+     public int CodigoProveedor { get; set; }
 
     public DateTime? FechaCreacion { get; set; }
 

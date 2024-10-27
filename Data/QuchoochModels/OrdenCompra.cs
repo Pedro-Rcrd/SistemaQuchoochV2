@@ -31,5 +31,7 @@ public partial class OrdenCompra
 
     public virtual Proveedor CodigoProveedorNavigation { get; set; } = null!;
 
+    public virtual ICollection<CompraDetalle> CompraDetalles { get; set; } = new List<CompraDetalle>();
+
     public virtual ICollection<OrdenCompraDetalle> OrdenCompraDetalles { get; set; } = new List<OrdenCompraDetalle>();
 }

@@ -67,13 +67,13 @@ public class EstudiantePatrocinadorController : ControllerBase
 
         return estudiantePatrocinador;
     }
-    
-     [HttpGet("getbyid/{id}")]
+
+    [HttpGet("getbyid/{id}")]
     public async Task<ActionResult<EstudiantePatrocinador>> GetById(int id)
     {
         var estudiantePatrocinador = await _estudiantePatrocinadorService.GetById(id);
 
-        if(estudiantePatrocinador is null)
+        if (estudiantePatrocinador is null)
         {
             //Es un método para mostrar error explicito
             return EstudiantePatrocinadorNotFound(id);
@@ -82,33 +82,50 @@ public class EstudiantePatrocinadorController : ControllerBase
         return estudiantePatrocinador;
     }
 
- 
+
 
     //Solo el administrador puede crear estudiantePatrocinadors
-
-    [HttpPost("create")]
-    public async Task<IActionResult> Create(EstudiantePatrocinadorInputDto estPatrocinador)
+[HttpPost("create")]
+public async Task<IActionResult> Create(List<EstudiantePatrocinadorInputDto> model)
+{
+    var estudiantesPatrocinadores = model.Select(asignacion => new EstudiantePatrocinador
     {
-        EstudiantePatrocinador estudiantePatrocinador = new EstudiantePatrocinador();
-        estudiantePatrocinador.CodigoEstudiante = estPatrocinador.CodigoEstudiante;
-        estudiantePatrocinador.CodigoPatrocinador = estPatrocinador.CodigoPatrocinador;
-        await _estudiantePatrocinadorService.Create(estudiantePatrocinador);
+        CodigoEstudiante = asignacion.CodigoEstudiante,
+        CodigoPatrocinador = asignacion.CodigoPatrocinador,
+        Estatus = "A"
+    }).ToList();
 
-        return Ok(new
-        {
-            status = true,
-            message = "Estudiante y Patrocinador creado correctamente"
-        });
-        //CreatedAtAction(nameof(GetById), new {id = newEstudiantePatrocinador.CodigoEstudiantePatrocinador}, newEstudiantePatrocinador);
-    }
+    // Inserta todos los registros en una sola operación
+    await _estudiantePatrocinadorService.CreateMultiple(estudiantesPatrocinadores);
 
-      [HttpGet("selectAll")]
-         public async Task<IEnumerable<PatrocinadorOutAllDto>> SelectAll()
+    return Ok(new
+    {
+        status = true,
+        message = "Los patrocinadores fueron asignados correctamente."
+    });
+}
+
+
+    [HttpGet("selectAll")]
+    public async Task<IEnumerable<PatrocinadorOutAllDto>> SelectAll()
     {
         var patrocinadores = await _estudiantePatrocinadorService.SelectAll();
         return patrocinadores;
     }
-  
+
+    [HttpGet("listaEstudiantes")]
+    public async Task<IEnumerable<ListaEstudiantePatrocinador>> ObtenerListaEstudiantes()
+    {
+        var estudiantes = await _estudiantePatrocinadorService.ObtenerListaEstudiantes();
+        return estudiantes;
+    }
+    [HttpGet("listaPatrocinadores/{codigoEstudiante}")]
+    public async Task<IEnumerable<PatrocinadoresDeEstudiante>> ObtenerListaPatrocinadores(int codigoEstudiante)
+    {
+        var patrocinadores = await _estudiantePatrocinadorService.ObtenerListaPatrocinadores(codigoEstudiante);
+        return patrocinadores;
+    }
+
 
 
 
@@ -121,7 +138,7 @@ public class EstudiantePatrocinadorController : ControllerBase
 
         if (estPatrocinadorToUpdate is not null)
         {
-            
+
             await _estudiantePatrocinadorService.Update(id, estPatrocinadorToUpdate);
             return Ok(new
             {
@@ -138,19 +155,19 @@ public class EstudiantePatrocinadorController : ControllerBase
 
     //Solo el administrador puede eliminar Estudiantes
     //[Authorize(Policy = "Administrador")]
-    [HttpDelete("delete/{id}")]
-    public async Task<IActionResult> Delete(int id)
+    [HttpDelete("delete/{codigoEstudiantePatrocinador}")]
+    public async Task<IActionResult> Delete(int codigoEstudiantePatrocinador)
     {
-        var estudiantePatrocinadorToDelete = await _estudiantePatrocinadorService.GetById(id);
+        var estudiantePatrocinadorToDelete = await _estudiantePatrocinadorService.GetById(codigoEstudiantePatrocinador);
 
         if (estudiantePatrocinadorToDelete is not null)
         {
-            await _estudiantePatrocinadorService.Delete(id);
-            return Ok();
+            await _estudiantePatrocinadorService.Delete(codigoEstudiantePatrocinador);
+            return Ok(new{status = true, message = "El patrocinador fue eliminado correctamente."});
         }
         else
         {
-            return EstudiantePatrocinadorNotFound(id);
+            return EstudiantePatrocinadorNotFound(codigoEstudiantePatrocinador);
         }
     }
 

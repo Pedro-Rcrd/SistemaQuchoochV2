@@ -25,7 +25,7 @@ public class GastoService
         .Select(a => new GastoOutAllDto
         {
             CodigoGasto = a.CodigoGasto,
-            Estudiante = a.CodigoEstudianteNavigation != null ? a.CodigoEstudianteNavigation.NombreEstudiante : "",
+            NombreEstudiante = a.CodigoEstudianteNavigation != null ? a.CodigoEstudianteNavigation.NombreEstudiante : "",
             FechaEntrega = a.FechaEntrega,
             Titulo = a.Titulo,
             Estado = a.Estado,
@@ -62,13 +62,12 @@ public class GastoService
        public async Task<IEnumerable<GastoOutAllDto>> SelectAll()
     {
         var gastos = await _context.Gastos
-        .Where(a => a.Estado == "A")
         .OrderByDescending(a => a.CodigoGasto)
         .Select(a => new GastoOutAllDto
         {
             CodigoGasto = a.CodigoGasto,
             CodigoBecario = a.CodigoEstudianteNavigation != null ? a.CodigoEstudianteNavigation.CodigoBecario : "",
-            Estudiante = a.CodigoEstudianteNavigation != null ? a.CodigoEstudianteNavigation.NombreEstudiante : "",
+            NombreEstudiante = a.CodigoEstudianteNavigation != null ? a.CodigoEstudianteNavigation.NombreEstudiante : "",
             ApellidoEstudiante = a.CodigoEstudianteNavigation != null ? a.CodigoEstudianteNavigation.ApellidoEstudiante : "",
             FechaEntrega = a.FechaEntrega,
             Titulo = a.Titulo,
@@ -80,15 +79,46 @@ public class GastoService
             Descripcion = a.Descripcion,
             FechaRecibirComprobante = a.FechaRecibirComprobante,
             NumeroComprobante = a.NumeroComprobante,
-            ImgCheque = a.ImgCheque,
-            ImgComprobante = a.ImgComprobante,
-            ImgEstudiante = a.ImgEstudiante
+        })
+        .ToListAsync();
+
+        return gastos;
+    }
+       public async Task<IEnumerable<GastoOutAllDto>> GastosPorRangoFecha(RangoFecha model)
+    {
+        var gastos = await _context.Gastos
+        .Where(a => a.FechaEntrega >= model.FechaInicio && a.FechaEntrega <= model.FechaFin)
+        .OrderByDescending(a => a.CodigoGasto)
+        .Select(a => new GastoOutAllDto
+        {
+            CodigoGasto = a.CodigoGasto,
+            CodigoBecario = a.CodigoEstudianteNavigation != null ? a.CodigoEstudianteNavigation.CodigoBecario : "",
+            NombreEstudiante = a.CodigoEstudianteNavigation != null ? a.CodigoEstudianteNavigation.NombreEstudiante : "",
+            ApellidoEstudiante = a.CodigoEstudianteNavigation != null ? a.CodigoEstudianteNavigation.ApellidoEstudiante : "",
+            FechaEntrega = a.FechaEntrega,
+            Titulo = a.Titulo,
+            Estado = a.Estado,
+            TipoPago = a.TipoPago,
+            NumeroCheque = a.NumeroCheque,
+            Monto = a.Monto,
+            PersonaRecibe = a.PersonaRecibe,
+            Descripcion = a.Descripcion,
+            FechaRecibirComprobante = a.FechaRecibirComprobante,
+            NumeroComprobante = a.NumeroComprobante,
         })
         .ToListAsync();
 
         return gastos;
     }
 
+         public async Task<IEnumerable<GastoDetalle>> ObtenerListaProductos(int codigoGasto)
+    {
+        var productos = await _context.GastoDetalles
+        .Where(a => a.CodigoGasto == codigoGasto && a.Estatus == "A")
+        .ToArrayAsync();
+        return productos;
+
+    }
 
     public async Task<GastoOutAllDto?> GetByIdDto(int id) //Rol? = Indica que devuelve un objeto rol o un null
     {
@@ -96,7 +126,8 @@ public class GastoService
         {
             CodigoGasto = a.CodigoGasto,
             CodigoBecario = a.CodigoEstudianteNavigation != null ? a.CodigoEstudianteNavigation.CodigoBecario : "",
-            Estudiante = a.CodigoEstudianteNavigation != null ? a.CodigoEstudianteNavigation.NombreEstudiante : "",
+            codigoEstudiante = a.CodigoEstudiante,
+            NombreEstudiante = a.CodigoEstudianteNavigation != null ? a.CodigoEstudianteNavigation.NombreEstudiante : "",
             ApellidoEstudiante = a.CodigoEstudianteNavigation != null ? a.CodigoEstudianteNavigation.ApellidoEstudiante : "",
             FechaEntrega = a.FechaEntrega,
             Titulo = a.Titulo,
@@ -119,6 +150,11 @@ public class GastoService
     {
         return await _context.Gastos.FindAsync(id);
     }
+      public async Task<GastoDetalle?> GetByIdProducto(int id) //Usuario? = Indica que devuelve un objeto usuario o un null
+    {
+        return await _context.GastoDetalles.FindAsync(id);
+    }
+
 
     public async Task<GastoUpdateOutDto?> GetByIdUpdateDto(int id) //Rol? = Indica que devuelve un objeto rol o un null
     {
@@ -151,6 +187,25 @@ public class GastoService
         await _context.SaveChangesAsync();
 
         return newGasto;
+    }
+
+     public async Task<GastoDetalle> CreateProducto(GastoDetalle producto)
+    {
+        _context.GastoDetalles.Add(producto);
+        await _context.SaveChangesAsync();
+
+        return producto;
+    }
+     public async Task ActualizarProducto(int codigoGastoDetalle, GastoDetalle producto)
+    {
+            var productoExistente = await _context.GastoDetalles.FindAsync(codigoGastoDetalle);
+            if(productoExistente != null){
+                productoExistente.NombreProducto = producto.NombreProducto;
+                productoExistente.Cantidad = producto.Cantidad;
+                productoExistente.Precio = producto.Precio;
+            }
+            await _context.SaveChangesAsync();
+       
     }
 
     //Metodo para actualizar datos del Gasto
@@ -190,11 +245,11 @@ public class GastoService
     //Metodo para elminar un Gasto
     public async Task Delete(int id)
     {
-        var gastoToDelete = await GetById(id);
+        var productoToDelete = await GetByIdProducto(id);
 
-        if (gastoToDelete is not null)
+        if (productoToDelete is not null)
         {
-            _context.Gastos.Remove(gastoToDelete);
+            productoToDelete.Estatus = "I";
             await _context.SaveChangesAsync();
         }
     }

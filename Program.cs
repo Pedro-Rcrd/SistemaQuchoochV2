@@ -74,6 +74,7 @@ builder.Services.AddScoped<PatrocinadorService>();
 builder.Services.AddScoped<EstudiantePatrocinadorService>();
 builder.Services.AddScoped<ModalidadEstudioService>();
 builder.Services.AddScoped<ConvertirImagenBase64Service>();
+builder.Services.AddScoped<PromedioService>();
 
 
 

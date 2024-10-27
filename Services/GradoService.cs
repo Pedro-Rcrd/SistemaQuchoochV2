@@ -44,6 +44,7 @@ public class GradoService
         if(existingGrado is not null)
         {
             existingGrado.NombreGrado = grado.NombreGrado;
+            existingGrado.Estatus = grado.Estatus;
             await _context.SaveChangesAsync();
         }
     }
@@ -55,7 +56,7 @@ public class GradoService
 
         if(gradoToDelete is not null)
         {
-            _context.Grados.Remove(gradoToDelete);
+            gradoToDelete.Estatus = "I";
             await _context.SaveChangesAsync();
         }
     }

@@ -44,25 +44,26 @@ public class GradoController : ControllerBase
    [HttpPost("create")]
     public async Task <IActionResult> Create(Grado grado)
     {
-        var newGrado = await _gradoService.Create(grado);
+    try{
 
-        return CreatedAtAction(nameof(GetById), new {id = newGrado.CodigoGrado}, newGrado);
+   
+    await _gradoService.Create(grado);
+
+        return Ok(new{status = true, message = "El grado fue creado correctamente."});
+    }catch{
+        return BadRequest(new{status = false, message = "Ocurrió un error al intentar crear el grado."});
     }
+     }
 
     [HttpPut("update/{id}")]
     public async Task<IActionResult> Update (int id, Grado grado)
     {
-        if(id != grado.CodigoGrado)
-        {
-            return BadRequest(new {message = $"El ID {id} de la URL no coincide con el ID {grado.CodigoGrado} del cuerpo de la solicitud"});
-        }
-
         var gradoToUpdate = await _gradoService.GetById(id);
 
         if(gradoToUpdate is not null)
         {
             await _gradoService.Update(id, grado);
-            return NoContent();
+            return Ok(new{status = true, message = "El grado fue catualizado correctamente."});
         }
         else
         {
@@ -78,7 +79,7 @@ public class GradoController : ControllerBase
         if(gradoToDelete is not null)
         {
             await _gradoService.Delete(id);
-            return Ok();
+            return Ok(new{status = true, message ="El grado fue eliminado correctamente."});
         }
         else
         {
