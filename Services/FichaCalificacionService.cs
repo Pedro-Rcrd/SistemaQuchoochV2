@@ -162,6 +162,7 @@ public class FichaCalificacionService
             Curso = a.Key.NombreCurso,
             PromedioGeneral = (double)(a.Average(cfc => cfc.Nota) ?? 0), // Conversión segura a double
         })
+        .OrderByDescending(dto => dto.PromedioGeneral)
         .ToListAsync();
 
     return cursos;
@@ -419,39 +420,28 @@ public class FichaCalificacionService
         return await _context.FichaCalificacions.CountAsync();
     }
 
-    //CANTIDA DE REGISTROS POR NIVELES
+    //CANTIDA DE REGISTROS POR NIVELES - GRÁFICA
     public async Task<IEnumerable<RegistroPorNivelAcademico>> CantidadRegistrosPorNivelAcademico(int año)
     {
         var resultados = await _context.FichaCalificacions
             .Where(f => f.CicloEscolar.HasValue && f.CicloEscolar.Value.Year == año)
-            .GroupBy(f => f.CodigoNivelAcademico)
+            .GroupBy(f => new {
+                f.CodigoNivelAcademico,
+                f.CodigoNivelAcademicoNavigation.NombreNivelAcademico
+            })
             .Select(g => new RegistroPorNivelAcademico
             {
-                NivelAcademico = GetNivelAcademicoLabel(g.Key), // Utiliza una función para obtener el nombre
+                CodigoNivelAcademico = g.Key.CodigoNivelAcademico,
+                NivelAcademico = g.Key.NombreNivelAcademico, // Utiliza una función para obtener el nombre
                 Cantidad = g.Count()
             })
+            .OrderBy(f => f.CodigoNivelAcademico)
             .ToListAsync();
 
         return resultados;
     }
 
-    private static string GetNivelAcademicoLabel(int codigoNivelAcademico)
-    {
-        // Realiza la asignación de códigos a etiquetas aquí
-        switch (codigoNivelAcademico)
-        {
-            case 1:
-                return "Primaria";
-            case 2:
-                return "Básico";
-            case 3:
-                return "Diversificado";
-            case 4:
-                return "Universitario";
-            default:
-                return "Desconocido";
-        }
-    }
+   
 
 
 
@@ -626,6 +616,7 @@ public class FichaCalificacionService
 
 public class RegistroPorNivelAcademico
 {
-    public string NivelAcademico { get; set; }
+    public int CodigoNivelAcademico {get; set;}
+    public string? NivelAcademico { get; set; }
     public int Cantidad { get; set; }
 }

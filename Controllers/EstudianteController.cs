@@ -48,6 +48,14 @@ public class EstudianteController : ControllerBase
         return estudiantes;
     }
 
+    [HttpGet("estudiantesPorAnio")]
+    public async Task<IEnumerable<CantidadEstudiantesPorAnioDto>> CantidadaEstudiantesPorAnio()
+    {
+
+        var estudiantes = await _estudianteService.ObtenerEstudiantesPorAnio();
+        return estudiantes;
+    }
+
     [HttpGet("getbyid/{id}")]
     public async Task<ActionResult<Estudiante>> GetById(int id)
     {

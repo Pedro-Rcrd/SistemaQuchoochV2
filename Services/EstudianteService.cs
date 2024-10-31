@@ -132,6 +132,24 @@ public class EstudianteService
         return estudiantes;
     }
 
+    public async Task<IEnumerable<CantidadEstudiantesPorAnioDto>> ObtenerEstudiantesPorAnio()
+    {
+        var estudiantesPorAnio = await _context.Estudiantes
+            .Where(e => e.FechaRegistro.HasValue) // Filtrar los que tienen fecha válida
+            .GroupBy(e => e.FechaRegistro.Value.Year) // Acceder al año solo si tiene valor
+            .Select(g => new CantidadEstudiantesPorAnioDto
+            {
+                Anio = g.Key,
+                CantidadEstudiantes = g.Count()
+            })
+            .OrderBy(e => e.Anio)
+            .ToListAsync();
+
+        return estudiantesPorAnio;
+    }
+
+
+
     public async Task<int> CantidadTotalRegistros()
     {
         return await _context.Estudiantes.CountAsync();

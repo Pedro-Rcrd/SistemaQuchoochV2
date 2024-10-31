@@ -322,8 +322,8 @@ public class FichaCalificacionController : ControllerBase
     }
 
     //Cantida de niveles academicos por ciclo
-    [HttpGet("totalregistronivelacademico/{año}")]
-    public async Task<IActionResult> GetTotalRegistrosPorNivelAcademico(int año)
+    [HttpGet("estudiantesPorNivelAcademico/{año}")]
+    public async Task<IActionResult> CantidadEstudiantesPorNivelAcademico(int año)
     {
         try
         {
